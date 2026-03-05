@@ -500,7 +500,7 @@ let discPool = [...DISCOVERIES].sort(()=>Math.random()-0.5);
 // ═══════════════════════════════════════════
 // We use a simple JSON-over-fetch to a Firebase Realtime DB
 // or fallback to localStorage if no Firebase configured.
-const FIREBASE_URL = ''; // e.g. https://YOUR-PROJECT.firebaseio.com
+const FIREBASE_URL = 'https://universe-f269f-default-rtdb.firebaseio.com/'; // e.g. https://YOUR-PROJECT.firebaseio.com
 
 async function dbGet() {
   if (!FIREBASE_URL) {
