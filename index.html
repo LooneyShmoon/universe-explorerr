@@ -368,28 +368,67 @@ btnEl.addEventListener('click',async e=>{
 // ── RESIZE ──
 let rsTimer;window.addEventListener('resize',()=>{clearTimeout(rsTimer);rsTimer=setTimeout(()=>{resizeBg();drawCosmos(state.uIndex);resizeMask();updateUI();},200);});
 
+// ── HIDE LOAD (always called, no matter what) ──
+function hideLoad(){
+  const l=document.getElementById('load');
+  if(!l)return;
+  l.classList.add('out');
+  setTimeout(()=>{if(l.parentNode)l.parentNode.removeChild(l);},1000);
+}
+
 // ── INIT ──
 async function init(){
-  myName=localStorage.getItem('cv5-name');
-  if(!myName){myName='חוקר-'+Math.floor(1000+Math.random()*8999);localStorage.setItem('cv5-name',myName);}
-  myClicks=parseInt(localStorage.getItem('cv5-myClicks')||0);
-  resizeBg();resizeMask();
-  const saved=await dbGet('global');
-  if(saved){
-    Object.assign(state,saved);
-    if(saved.circles)circles=saved.circles.map(c=>({x:c.xp*maskC.width,y:c.yp*maskC.height,r:c.rp*Math.min(maskC.width,maskC.height),...c}));
-    if(saved.leaderboard)state.leaderboard=saved.leaderboard;
-    if(saved.messages)state.messages=saved.messages;
-    if(saved.timelineEvents)state.timelineEvents=saved.timelineEvents;
-  }
+  // 1. Name
+  try{
+    myName=localStorage.getItem('cv5-name');
+    if(!myName){myName='חוקר-'+Math.floor(1000+Math.random()*8999);localStorage.setItem('cv5-name',myName);}
+    myClicks=parseInt(localStorage.getItem('cv5-myClicks')||0);
+  }catch(e){myName='חוקר-'+(Math.random()*9000|1000);myClicks=0;}
+
+  // 2. Size canvases FIRST (critical — must happen before draw)
+  bgC.width=window.innerWidth; bgC.height=window.innerHeight;
+  maskC.width=window.innerWidth; maskC.height=window.innerHeight;
+
+  // 3. Draw cosmos immediately so something is visible
+  try{ drawCosmos(0); }catch(e){ console.warn('drawCosmos failed',e); }
+
+  // 4. Black fog
+  try{ rebuildMask(); }catch(e){}
+
+  // 5. Basic UI
+  try{ updateUI(); }catch(e){}
+
+  // 6. Hide load screen — do this early so user isn't stuck
+  setTimeout(hideLoad, 800);
+
+  // 7. Load saved state (async, non-blocking)
+  try{
+    const saved=await dbGet('global');
+    if(saved){
+      Object.assign(state,saved);
+      if(saved.circles)circles=saved.circles.map(c=>({
+        x:c.xp*maskC.width, y:c.yp*maskC.height,
+        r:c.rp*Math.min(maskC.width,maskC.height), ...c
+      }));
+      if(saved.leaderboard)state.leaderboard=saved.leaderboard;
+      if(saved.messages)state.messages=saved.messages;
+      if(saved.timelineEvents)state.timelineEvents=saved.timelineEvents;
+      // Redraw with correct universe index
+      drawCosmos(state.uIndex);
+      rebuildMask();
+      updateUI();
+    }
+  }catch(e){ console.warn('load state failed',e); }
+
   lastMilestone=Math.max(-1,...MILESTONES.filter(m=>state.uClicks>=m.at&&m.at<UNIVERSE_TARGET).map(m=>m.at));
-  drawCosmos(state.uIndex);
-  rebuildMask();
-  updateUI();updateLB();renderLB();renderTL();renderMsgs();
-  startLive();
-  setTimeout(()=>{document.getElementById('load').classList.add('out');setTimeout(()=>document.getElementById('load').remove(),1000);},900);
+
+  try{ updateLB();renderLB();renderTL();renderMsgs(); }catch(e){}
+  try{ startLive(); }catch(e){}
 }
-init();
+
+// Safety net: if init crashes entirely, still hide load after 3s
+setTimeout(hideLoad, 3000);
+init().catch(e=>{ console.error('init failed',e); hideLoad(); });
 </script>
 </body>
 </html>
