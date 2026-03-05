@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#00000f">
+<title>מגלי היקום</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Heebo:wght@200;300;400&display=swap');
+
+:root {
+  --gold: #e8c97a;
+  --gold-dim: #5a4820;
+  --cyan: #4df0ff;
+  --crimson: #ff4060;
+  --void: #00000f;
+  --deep: #040812;
+  --dim: #3a4a6a;
+  --mid-text: #7080a0;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+html, body {
+  width:100%; height:100%;
+  overflow:hidden;
+  background:var(--void);
+  color:#fff;
+  font-family:'Heebo',sans-serif;
+  user-select:none;
+}
+
+/* ─── STARFIELD (CSS only, no canvas) ─── */
+#starfield {
+  position:fixed; inset:0; z-index:0;
+  overflow:hidden;
+}
+.star {
+  position:absolute;
+  border-radius:50%;
+  background:#fff;
+  animation:tw var(--d) ease-in-out infinite var(--dl);
+}
+@keyframes tw {
+  0%,100%{opacity:var(--mn);transform:scale(1)}
+  50%{opacity:var(--mx);transform:scale(1.5)}
+}
+
+/* ─── PIXEL GRID (CSS grid, not canvas) ─── */
+#universe-grid {
+  position:fixed; inset:0; z-index:1;
+  display:grid;
+  grid-template-columns:repeat(var(--cols,30), 1fr);
+  grid-template-rows:repeat(var(--rows,50), 1fr);
+  opacity:0.9;
+}
+.upx {
+  background:transparent;
+  transition:background 0.4s ease;
+}
+.upx.lit {
+  animation:px-in 0.5s ease-out forwards;
+}
+@keyframes px-in {
+  0%{filter:brightness(4) saturate(0)}
+  100%{filter:brightness(1) saturate(1)}
+}
+
+/* ─── OVERLAYS ─── */
+#vignette {
+  position:fixed; inset:0; z-index:2; pointer-events:none;
+  background:radial-gradient(ellipse 75% 75% at 50% 50%,
+    transparent 0%, rgba(0,0,15,0.5) 55%, rgba(0,0,15,0.97) 100%);
+  transition:opacity 1s;
+}
+#scanlines {
+  position:fixed; inset:0; z-index:3; pointer-events:none; opacity:0.025;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,0.15) 2px,rgba(255,255,255,0.15) 3px);
+}
+
+/* ─── EVENT OVERLAY ─── */
+#event-overlay {
+  position:fixed; inset:0; z-index:60; pointer-events:none;
+  display:flex; align-items:center; justify-content:center;
+  opacity:0;
+}
+#event-overlay.show { animation:ev-life 4s ease-out forwards; }
+@keyframes ev-life {
+  0%{opacity:0} 12%{opacity:1} 75%{opacity:1} 100%{opacity:0}
+}
+.ev-inner {
+  text-align:center;
+  animation:ev-scale 4s ease-out forwards;
+}
+@keyframes ev-scale {
+  0%{transform:scale(0.5);filter:blur(15px)}
+  15%{transform:scale(1.02);filter:blur(0)}
+  80%{transform:scale(1)}
+  100%{transform:scale(1.08);filter:blur(4px)}
+}
+.ev-name {
+  font-family:'Cinzel',serif;
+  font-size:clamp(2rem,8vw,4rem);
+  font-weight:900;
+  letter-spacing:0.2em;
+  text-shadow:0 0 40px currentColor,0 0 100px currentColor;
+  margin-bottom:8px;
+}
+.ev-desc {
+  font-size:0.8rem;
+  letter-spacing:0.3em;
+  color:var(--mid-text);
+  text-transform:uppercase;
+}
+
+/* ─── BIG BANG ─── */
+#bigbang {
+  position:fixed; inset:0; z-index:200;
+  background:var(--void);
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:16px;
+  opacity:0; pointer-events:none;
+}
+#bigbang.active {
+  pointer-events:all;
+  animation:bb-life 5s ease-in-out forwards;
+}
+@keyframes bb-life {
+  0%{opacity:0} 12%{opacity:1} 80%{opacity:1} 100%{opacity:0}
+}
+.bb-ring {
+  position:absolute; border-radius:50%;
+  border:1.5px solid var(--gold);
+  animation:bb-ring 3.5s ease-out forwards;
+  opacity:0;
+}
+@keyframes bb-ring {
+  0%{width:0;height:0;opacity:0.9;border-color:var(--gold)}
+  100%{width:250vmax;height:250vmax;opacity:0;border-color:var(--cyan)}
+}
+.bb-label { font-family:'Cinzel',serif; font-size:clamp(0.7rem,2vw,1rem); letter-spacing:0.4em; color:var(--gold); text-align:center; z-index:1; }
+.bb-name  { font-family:'Cinzel',serif; font-size:clamp(1.5rem,5vw,3rem); font-weight:900; letter-spacing:0.25em; color:#fff; text-shadow:0 0 60px var(--gold); z-index:1; text-align:center; }
+
+/* ─── DISCOVERY LOG ─── */
+#disc-log {
+  position:fixed; right:12px; top:50%; transform:translateY(-50%);
+  z-index:11; width:clamp(130px,22vw,180px);
+  display:flex; flex-direction:column; gap:5px;
+  pointer-events:none;
+}
+.disc-item {
+  background:rgba(4,8,18,0.9);
+  border-right:2px solid var(--gold-dim);
+  padding:5px 8px;
+  font-size:0.55rem;
+  letter-spacing:0.08em;
+  color:var(--mid-text);
+  text-transform:uppercase;
+  line-height:1.5;
+  animation:disc-in 0.4s ease-out;
+}
+@keyframes disc-in { from{opacity:0;transform:translateX(15px)} to{opacity:1;transform:none} }
+.disc-name { color:var(--gold); display:block; font-size:0.6rem; }
+
+/* ─── MAIN UI ─── */
+#ui {
+  position:fixed; inset:0; z-index:10;
+  display:flex; flex-direction:column;
+  justify-content:space-between;
+  padding:clamp(12px,3vw,24px);
+  pointer-events:none;
+}
+
+/* TOP */
+#top {
+  display:flex; justify-content:space-between; align-items:flex-start;
+}
+.lbl { font-size:0.55rem; letter-spacing:0.35em; color:var(--dim); text-transform:uppercase; margin-bottom:3px; }
+.uni-name { font-family:'Cinzel',serif; font-size:clamp(0.8rem,2.5vw,1.1rem); font-weight:700; letter-spacing:0.15em; color:var(--gold); text-shadow:0 0 20px rgba(232,201,122,0.4); }
+.uni-gen  { font-size:0.55rem; letter-spacing:0.25em; color:var(--dim); }
+.exp-count { font-family:'Cinzel',serif; font-size:clamp(0.8rem,2.5vw,1rem); color:var(--cyan); text-shadow:0 0 15px rgba(77,240,255,0.4); text-align:left; }
+
+/* BOTTOM */
+#bottom {
+  display:flex; flex-direction:column;
+  align-items:center; gap:clamp(10px,2.5vh,18px);
+}
+
+/* Progress */
+#prog-wrap { width:min(420px,88vw); display:flex; flex-direction:column; gap:6px; }
+.prog-header { display:flex; justify-content:space-between; font-size:0.55rem; letter-spacing:0.18em; color:var(--dim); text-transform:uppercase; }
+.prog-next { color:var(--cyan); }
+.prog-bar {
+  position:relative; height:3px;
+  background:rgba(255,255,255,0.04);
+  border-radius:2px;
+}
+.prog-fill {
+  height:100%; border-radius:2px;
+  background:linear-gradient(90deg,#0a2040,var(--cyan));
+  box-shadow:0 0 10px var(--cyan);
+  transition:width 0.7s cubic-bezier(.4,0,.2,1);
+  position:relative;
+}
+.prog-fill::after {
+  content:'';
+  position:absolute; right:-1px; top:-3.5px;
+  width:5px; height:10px;
+  background:var(--cyan);
+  box-shadow:0 0 8px var(--cyan);
+  border-radius:1px;
+}
+.prog-dots { position:absolute; inset:0; }
+.m-dot {
+  position:absolute; top:50%;
+  transform:translate(-50%,-50%);
+  width:5px; height:5px; border-radius:50%;
+  border:1px solid var(--gold-dim);
+  background:var(--deep);
+  transition:all 0.4s;
+}
+.m-dot.done { background:var(--gold); border-color:var(--gold); box-shadow:0 0 6px var(--gold); }
+
+/* Stats */
+.stats {
+  display:flex; gap:clamp(20px,6vw,40px);
+  align-items:center;
+}
+.stat { display:flex; flex-direction:column; align-items:center; gap:1px; }
+.stat-val {
+  font-family:'Cinzel',serif;
+  font-size:clamp(1.3rem,5vw,2.2rem);
+  font-weight:700; color:var(--gold);
+  text-shadow:0 0 25px rgba(232,201,122,0.35);
+  line-height:1;
+  transition:transform 0.1s, color 0.1s;
+}
+.stat-val.bump { transform:scale(1.18); color:#fff; text-shadow:0 0 30px #fff; }
+.stat-lbl { font-size:0.5rem; letter-spacing:0.22em; color:var(--dim); text-transform:uppercase; }
+
+/* Button */
+#btn-wrap {
+  pointer-events:all;
+  position:relative;
+  display:flex; align-items:center; justify-content:center;
+}
+.orbit {
+  position:absolute; border-radius:50%;
+  border:1px solid rgba(77,240,255,0.15);
+  animation:spin var(--s,10s) linear infinite var(--dir,normal);
+}
+.orbit::before {
+  content:''; position:absolute;
+  top:-2px; left:50%;
+  width:4px; height:4px; border-radius:50%;
+  background:var(--cyan); box-shadow:0 0 8px var(--cyan);
+  transform:translateX(-50%);
+}
+@keyframes spin { to{transform:rotate(360deg)} }
+.aura {
+  position:absolute; inset:-12px; border-radius:50%;
+  background:radial-gradient(circle,rgba(77,240,255,0.07) 0%,transparent 70%);
+  animation:aura 2.2s ease-in-out infinite;
+}
+@keyframes aura { 0%,100%{transform:scale(0.88);opacity:0.4} 50%{transform:scale(1.08);opacity:1} }
+
+#btn {
+  position:relative; z-index:1;
+  width:clamp(96px,18vw,120px);
+  height:clamp(96px,18vw,120px);
+  border-radius:50%;
+  border:1px solid rgba(232,201,122,0.35);
+  background:
+    radial-gradient(circle at 35% 30%,rgba(232,201,122,0.07) 0%,transparent 55%),
+    rgba(4,8,18,0.92);
+  color:var(--gold);
+  font-family:'Cinzel',serif;
+  font-size:clamp(0.45rem,1.2vw,0.6rem);
+  letter-spacing:0.18em;
+  text-transform:uppercase;
+  cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+  box-shadow:0 0 25px rgba(232,201,122,0.08),inset 0 1px 0 rgba(255,255,255,0.04);
+  transition:all 0.14s;
+  touch-action:manipulation;
+}
+#btn .ico { font-size:1.3rem; line-height:1; }
+#btn:hover  { border-color:rgba(232,201,122,0.7); box-shadow:0 0 50px rgba(232,201,122,0.2),inset 0 0 25px rgba(232,201,122,0.05); transform:scale(1.04); }
+#btn:active { transform:scale(0.9); box-shadow:0 0 15px rgba(232,201,122,0.3),inset 0 0 20px rgba(232,201,122,0.1); }
+
+/* Streak */
+.streak-row {
+  display:flex; align-items:center; gap:6px;
+  font-size:0.55rem; letter-spacing:0.2em; color:var(--dim); text-transform:uppercase;
+}
+.streak-n { font-family:'Cinzel',serif; font-size:0.75rem; color:var(--crimson); }
+
+/* ─── TOASTS ─── */
+#toasts {
+  position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
+  z-index:100; pointer-events:none;
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+}
+.toast {
+  background:rgba(4,8,18,0.96);
+  border:1px solid rgba(232,201,122,0.25);
+  color:var(--gold);
+  font-size:0.7rem; letter-spacing:0.1em;
+  padding:9px 20px;
+  white-space:nowrap;
+  box-shadow:0 0 18px rgba(232,201,122,0.15);
+  animation:toast-life 3.8s ease-out forwards;
+}
+@keyframes toast-life {
+  0%{opacity:0;transform:translateY(8px)} 12%{opacity:1;transform:none}
+  72%{opacity:1} 100%{opacity:0;transform:translateY(-4px)}
+}
+
+/* ─── PARTICLES ─── */
+.pt {
+  position:fixed; pointer-events:none; z-index:20; border-radius:50%;
+  animation:pt-fly var(--dur) ease-out forwards;
+}
+@keyframes pt-fly {
+  0%{opacity:1;transform:translate(0,0) scale(1)}
+  100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0)}
+}
+
+/* ─── LOAD ─── */
+#load {
+  position:fixed; inset:0; z-index:999;
+  background:var(--void);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px;
+  transition:opacity 0.8s;
+}
+#load.out { opacity:0; pointer-events:none; }
+.load-t { font-family:'Cinzel',serif; font-size:clamp(1.2rem,5vw,2rem); font-weight:900; letter-spacing:0.35em; color:var(--gold); text-shadow:0 0 40px rgba(232,201,122,0.4); }
+.load-s { font-size:0.6rem; letter-spacing:0.45em; color:var(--dim); text-transform:uppercase; animation:blink 1.1s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:0.2} 50%{opacity:1} }
+</style>
+</head>
+<body>
+
+<div id="load">
+  <div class="load-t">מגלי היקום</div>
+  <div class="load-s">טוען את הקוסמוס...</div>
+</div>
+
+<div id="starfield"></div>
+<div id="universe-grid"></div>
+<div id="vignette"></div>
+<div id="scanlines"></div>
+
+<!-- EVENT -->
+<div id="event-overlay">
+  <div class="ev-inner">
+    <div class="ev-name" id="ev-name">SUPERNOVA</div>
+    <div class="ev-desc" id="ev-desc"></div>
+  </div>
+</div>
+
+<!-- BIG BANG -->
+<div id="bigbang">
+  <div class="bb-ring" style="animation-delay:0s"></div>
+  <div class="bb-ring" style="animation-delay:0.5s"></div>
+  <div class="bb-ring" style="animation-delay:1s"></div>
+  <div class="bb-ring" style="animation-delay:1.5s"></div>
+  <div class="bb-label" id="bb-label">יקום חדש נולד</div>
+  <div class="bb-name"  id="bb-name"></div>
+</div>
+
+<div id="disc-log"></div>
+
+<div id="ui">
+  <div id="top">
+    <div>
+      <div class="lbl">יקום פעיל</div>
+      <div class="uni-name" id="uni-name">—</div>
+      <div class="uni-gen"  id="uni-gen">דור ראשון</div>
+    </div>
+    <div style="text-align:left">
+      <div class="lbl">חוקרים פעילים</div>
+      <div class="exp-count" id="exp-count">—</div>
+      <div class="lbl" style="font-size:0.48rem">ברחבי הגלקסיה</div>
+    </div>
+  </div>
+
+  <div id="bottom">
+    <div id="prog-wrap">
+      <div class="prog-header">
+        <span>חשיפת היקום</span>
+        <span class="prog-next" id="prog-next">—</span>
+      </div>
+      <div class="prog-bar">
+        <div class="prog-fill" id="prog-fill" style="width:0%"></div>
+        <div class="prog-dots" id="prog-dots"></div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-val" id="s-clicks">0</div>
+        <div class="stat-lbl">לחיצות כלל</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="s-pct">0%</div>
+        <div class="stat-lbl">יקום נחשף</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="s-uni">0</div>
+        <div class="stat-lbl">יקומות</div>
+      </div>
+    </div>
+
+    <div id="btn-wrap">
+      <div class="orbit" style="width:155px;height:155px;--s:13s"></div>
+      <div class="orbit" style="width:185px;height:185px;--s:21s;--dir:reverse;border-color:rgba(232,201,122,0.08)"></div>
+      <div class="aura"></div>
+      <button id="btn">
+        <span class="ico">✦</span>
+        <span>גלה</span>
+      </button>
+    </div>
+
+    <div class="streak-row">
+      <span>🔥</span>
+      <span class="streak-n" id="streak-n">0</span>
+      <span>ימים רצופים</span>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════
+const UNIVERSE_TARGET = 10000;
+const STORAGE_KEY     = 'cosmos-shared-v1';
+
+// Responsive grid
+function getGrid() {
+  const w = window.innerWidth, h = window.innerHeight;
+  if (w < 400) return { cols:20, rows:36 };
+  if (w < 700) return { cols:28, rows:48 };
+  return { cols:40, rows:60 };
+}
+
+const MILESTONES = [
+  { at:500,   name:'NEBULA',         he:'ערפילית נולדת',     color:'#8050ff', desc:'ענן גז ואבק קוסמי' },
+  { at:1500,  name:'PULSAR',         he:'פולסר מסתובב',      color:'#4df0ff', desc:'קרינה קוסמית בקצב מדויק' },
+  { at:3000,  name:'SUPERNOVA',      he:'סופרנובה',           color:'#ff7030', desc:'כוכב מתפוצץ במיליארד שמשות' },
+  { at:5000,  name:'QUASAR',         he:'קוואזר בוהק',       color:'#ffc800', desc:'ליבת גלקסיה בלהב' },
+  { at:8000,  name:'BLACK HOLE',     he:'חור שחור',           color:'#ccccff', desc:'שובר הזמן והמרחב' },
+  { at:10000, name:'UNIVERSE COMPLETE', he:'היקום נחשף',     color:'#e8c97a', desc:'כל פיקסל נחשף' },
+];
+
+const UNI_NAMES = [
+  'ALPHA PRIME','KEPLER VOID','ANDROMEDA-7','SIRIUS DEEP',
+  'NOVA TERMINUS','CYGNUS BELT','LYRA EXPANSE','VEGA HORIZON',
+  'ORION GATE','CASSINI RIM','HUBBLE FIELD','COSMOS ZERO',
+  'ETHER REACH','VOID PRIME','NEXUS DEEP','AURORA BELT',
+];
+const GEN_HE = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שביעי','שמיני','תשיעי','עשירי'];
+const DISCOVERIES = [
+  'כוכב לכת KOI-7711b','ענן מגלן גדול','גלקסיית אנדרומדה',
+  'קוואזר 3C-273','ערפילית עין החתול','חור שחור M87*',
+  'גל כבידה GW150914','כוכב נויטרון PSR B1919',
+  'ערפילית הסרטן','קבוצת גלקסיות Abell 2029',
+  'ערפילית אוריון','גלקסיית החלזון NGC 1300',
+  'אבק קוסמי Sagittarius B2','חגורת קויפר החיצונית',
+  'ענן אורט','כוכב ענק UY Scuti',
+];
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let G = { cols:40, rows:60 };
+
+let state = {
+  totalClicks: 0,
+  uClicks: 0,
+  uIndex: 0,
+  generation: 0,
+  doneUniverses: 0,
+  litPixels: [],       // array of grid indices
+  streak: 0,
+  lastDate: null,
+  simExplorers: 18,
+};
+
+let transitioning = false;
+let lastMilestone = -1;
+let discPool = [...DISCOVERIES].sort(()=>Math.random()-0.5);
+
+// ═══════════════════════════════════════════
+// FIREBASE — replace with your config
+// ═══════════════════════════════════════════
+// We use a simple JSON-over-fetch to a Firebase Realtime DB
+// or fallback to localStorage if no Firebase configured.
+const FIREBASE_URL = ''; // e.g. https://YOUR-PROJECT.firebaseio.com
+
+async function dbGet() {
+  if (!FIREBASE_URL) {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch(e) { return null; }
+  }
+  try {
+    const r = await fetch(`${FIREBASE_URL}/state.json`);
+    return await r.json();
+  } catch(e) { return null; }
+}
+
+async function dbSet(data) {
+  if (!FIREBASE_URL) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e) {}
+    return;
+  }
+  try {
+    await fetch(`${FIREBASE_URL}/state.json`, {
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(data),
+    });
+  } catch(e) {}
+}
+
+let saveTimer;
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    dbSet({
+      totalClicks: state.totalClicks,
+      uClicks:     state.uClicks,
+      uIndex:      state.uIndex,
+      generation:  state.generation,
+      doneUniverses: state.doneUniverses,
+      litPixels:   state.litPixels,
+      streak:      state.streak,
+      lastDate:    state.lastDate,
+      simExplorers:state.simExplorers,
+    });
+  }, 900);
+}
+
+// ═══════════════════════════════════════════
+// GRID SETUP
+// ═══════════════════════════════════════════
+const grid = document.getElementById('universe-grid');
+let cells = [];
+
+function buildGrid() {
+  G = getGrid();
+  document.documentElement.style.setProperty('--cols', G.cols);
+  document.documentElement.style.setProperty('--rows', G.rows);
+  grid.innerHTML = '';
+  cells = [];
+  const total = G.cols * G.rows;
+  const frag = document.createDocumentFragment();
+  for (let i = 0; i < total; i++) {
+    const d = document.createElement('div');
+    d.className = 'upx';
+    frag.appendChild(d);
+    cells.push(d);
+  }
+  grid.appendChild(frag);
+  // re-apply lit pixels
+  for (const idx of state.litPixels) litCell(idx, false);
+}
+
+function cellColor(idx) {
+  const col = idx % G.cols, row = Math.floor(idx / G.cols);
+  const hue = ((col * 5.3) + (row * 7.1) + state.uIndex * 43) % 360;
+  const sat = 45 + Math.sin((col + row) * 0.6) * 30;
+  const lit = 32 + Math.sin(col * 0.4 + row * 0.25) * 22;
+  return `hsl(${hue},${sat}%,${lit}%)`;
+}
+
+function litCell(idx, animate) {
+  if (!cells[idx]) return;
+  cells[idx].style.background = cellColor(idx);
+  if (animate) {
+    cells[idx].classList.remove('lit');
+    void cells[idx].offsetWidth;
+    cells[idx].classList.add('lit');
+  }
+}
+
+// ═══════════════════════════════════════════
+// STARFIELD
+// ═══════════════════════════════════════════
+function buildStars() {
+  const sf = document.getElementById('starfield');
+  sf.innerHTML = '';
+  const n = window.innerWidth < 500 ? 80 : 160;
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const sz = Math.random() < 0.75 ? 1 : Math.random() < 0.5 ? 1.5 : 2;
+    s.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*100}%;
+      width:${sz}px;height:${sz}px;
+      --d:${2+Math.random()*5}s;--dl:${Math.random()*5}s;
+      --mn:${0.05+Math.random()*0.15};--mx:${0.3+Math.random()*0.6}`;
+    sf.appendChild(s);
+  }
+}
+
+// ═══════════════════════════════════════════
+// PARTICLES
+// ═══════════════════════════════════════════
+function burst(x, y) {
+  const colors = ['#e8c97a','#4df0ff','#fff','#ff7040'];
+  for (let i = 0; i < 10; i++) {
+    const el = document.createElement('div');
+    el.className = 'pt';
+    const a = (Math.PI*2/10)*i + (Math.random()-0.5)*0.7;
+    const d = 35 + Math.random()*70;
+    const c = colors[i%colors.length];
+    const sz = 1.5 + Math.random()*2;
+    el.style.cssText = `left:${x}px;top:${y}px;width:${sz}px;height:${sz}px;
+      background:${c};box-shadow:0 0 5px ${c};
+      --tx:${Math.cos(a)*d}px;--ty:${Math.sin(a)*d}px;
+      --dur:${0.55+Math.random()*0.5}s`;
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(), 1100);
+  }
+}
+
+// ═══════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════
+function toast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.getElementById('toasts').appendChild(t);
+  setTimeout(()=>t.remove(), 3900);
+}
+
+// ═══════════════════════════════════════════
+// DISCOVERY
+// ═══════════════════════════════════════════
+function addDiscovery() {
+  if (!discPool.length) discPool = [...DISCOVERIES].sort(()=>Math.random()-0.5);
+  const name = discPool.pop();
+  const coord = `${rnd3()}-${rnd3()}`;
+  const log = document.getElementById('disc-log');
+  const el = document.createElement('div');
+  el.className = 'disc-item';
+  el.innerHTML = `<span class="disc-name">✦ ${name}</span>קואורד: ${coord}`;
+  log.insertBefore(el, log.firstChild);
+  while (log.children.length > 4) log.removeChild(log.lastChild);
+}
+function rnd3() { return String(Math.floor(Math.random()*999)).padStart(3,'0'); }
+
+// ═══════════════════════════════════════════
+// COSMIC EVENT
+// ═══════════════════════════════════════════
+function cosmicEvent(ev) {
+  const ov = document.getElementById('event-overlay');
+  const en = document.getElementById('ev-name');
+  en.textContent = ev.name;
+  en.style.color = ev.color;
+  en.style.textShadow = `0 0 40px ${ev.color},0 0 100px ${ev.color}`;
+  document.getElementById('ev-desc').textContent = ev.desc;
+  ov.classList.remove('show'); void ov.offsetWidth; ov.classList.add('show');
+  setTimeout(()=>ov.classList.remove('show'), 4200);
+  toast(`✦ ${ev.he} — ${ev.desc}`);
+}
+
+// ═══════════════════════════════════════════
+// BIG BANG
+// ═══════════════════════════════════════════
+async function bigBang() {
+  transitioning = true;
+  state.doneUniverses++;
+  state.generation++;
+  const nextName = UNI_NAMES[state.uIndex % UNI_NAMES.length];
+  document.getElementById('bb-name').textContent = nextName;
+  const genHe = GEN_HE[(state.generation-1) % GEN_HE.length];
+  document.getElementById('bb-label').textContent = `יקום ${genHe} נחשף במלואו — יקום חדש נולד`;
+
+  const bb = document.getElementById('bigbang');
+  bb.classList.add('active');
+
+  // white flash
+  document.getElementById('universe-grid').style.transition = 'filter 0.3s';
+  document.getElementById('universe-grid').style.filter = 'brightness(6) saturate(0)';
+
+  await sleep(5000);
+
+  state.uIndex++;
+  state.uClicks = 0;
+  state.litPixels = [];
+  lastMilestone = -1;
+  cells.forEach(c=>{ c.style.background=''; c.classList.remove('lit'); });
+  document.getElementById('universe-grid').style.filter = '';
+  bb.classList.remove('active');
+
+  updateUI();
+  transitioning = false;
+  scheduleSave();
+}
+
+function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
+
+// ═══════════════════════════════════════════
+// STREAK
+// ═══════════════════════════════════════════
+function tickStreak() {
+  const today = new Date().toDateString();
+  if (state.lastDate === today) return;
+  const yesterday = new Date(Date.now()-86400000).toDateString();
+  state.streak = state.lastDate === yesterday ? state.streak + 1 : 1;
+  state.lastDate = today;
+}
+
+// ═══════════════════════════════════════════
+// UI
+// ═══════════════════════════════════════════
+function bump(id) {
+  const el = document.getElementById(id);
+  el.classList.add('bump');
+  setTimeout(()=>el.classList.remove('bump'), 130);
+}
+
+function updateUI() {
+  const pct = (state.uClicks / UNIVERSE_TARGET) * 100;
+  const uName = UNI_NAMES[state.uIndex % UNI_NAMES.length];
+  const genHe = GEN_HE[state.generation % GEN_HE.length];
+
+  document.getElementById('uni-name').textContent  = uName;
+  document.getElementById('uni-gen').textContent   = `דור ${genHe}`;
+  document.getElementById('s-clicks').textContent  = state.totalClicks.toLocaleString('he-IL');
+  document.getElementById('s-pct').textContent     = Math.floor(pct) + '%';
+  document.getElementById('s-uni').textContent     = state.doneUniverses;
+  document.getElementById('streak-n').textContent  = state.streak;
+  document.getElementById('exp-count').textContent =
+    (state.simExplorers + Math.floor(state.totalClicks/40)).toLocaleString('he-IL');
+
+  document.getElementById('prog-fill').style.width = pct + '%';
+
+  const next = MILESTONES.find(m=>m.at > state.uClicks);
+  document.getElementById('prog-next').textContent = next
+    ? `עוד ${(next.at-state.uClicks).toLocaleString()} ← ${next.name}` : '✦ כמעט שם';
+
+  // dots
+  const dotsWrap = document.getElementById('prog-dots');
+  dotsWrap.innerHTML = '';
+  MILESTONES.slice(0,-1).forEach(m=>{
+    const d = document.createElement('div');
+    d.className = 'm-dot' + (state.uClicks >= m.at ? ' done' : '');
+    d.style.left = (m.at/UNIVERSE_TARGET*100)+'%';
+    dotsWrap.appendChild(d);
+  });
+
+  // vignette
+  const fog = 0.96 - (pct/100)*0.78;
+  document.getElementById('vignette').style.background =
+    `radial-gradient(ellipse 75% 75% at 50% 50%,transparent 0%,rgba(0,0,15,${fog*0.45}) 55%,rgba(0,0,15,${fog}) 100%)`;
+}
+
+// ═══════════════════════════════════════════
+// CLICK
+// ═══════════════════════════════════════════
+document.getElementById('btn').addEventListener('click', async e => {
+  if (transitioning) return;
+
+  state.totalClicks++;
+  state.uClicks++;
+  tickStreak();
+
+  // Reveal random unlit pixel
+  const total = G.cols * G.rows;
+  let idx, tries=0;
+  do { idx = Math.floor(Math.random()*total); tries++; }
+  while (state.litPixels.includes(idx) && tries < 40);
+
+  if (!state.litPixels.includes(idx)) {
+    state.litPixels.push(idx);
+    litCell(idx, true);
+  }
+
+  // Particles
+  const r = e.currentTarget.getBoundingClientRect();
+  burst(r.left+r.width/2, r.top+r.height/2);
+
+  // Bump stats
+  bump('s-clicks'); bump('s-pct');
+
+  // Discovery every ~8 clicks
+  if (state.totalClicks % 8 === 0) addDiscovery();
+
+  // Milestones
+  for (const ev of MILESTONES) {
+    if (state.uClicks >= ev.at && lastMilestone < ev.at && ev.at < UNIVERSE_TARGET) {
+      lastMilestone = ev.at;
+      cosmicEvent(ev);
+      break;
+    }
+  }
+
+  // Universe complete
+  if (state.uClicks >= UNIVERSE_TARGET) {
+    cosmicEvent(MILESTONES[MILESTONES.length-1]);
+    await sleep(3200);
+    await bigBang();
+  }
+
+  updateUI();
+  scheduleSave();
+});
+
+// ═══════════════════════════════════════════
+// RESIZE
+// ═══════════════════════════════════════════
+let resizeTimer;
+window.addEventListener('resize', ()=>{
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(()=>{ buildGrid(); updateUI(); }, 250);
+});
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+async function init() {
+  buildStars();
+  buildGrid();
+
+  const saved = await dbGet();
+  if (saved) Object.assign(state, saved);
+
+  lastMilestone = Math.max(-1, ...MILESTONES
+    .filter(m=>state.uClicks >= m.at && m.at < UNIVERSE_TARGET)
+    .map(m=>m.at));
+
+  // Re-light saved pixels
+  for (const idx of state.litPixels) litCell(idx, false);
+
+  updateUI();
+
+  setTimeout(()=>{
+    document.getElementById('load').classList.add('out');
+    setTimeout(()=>document.getElementById('load').remove(), 900);
+  }, 1000);
+
+  // Explorer drift
+  setInterval(()=>{
+    if (Math.random()<0.4) {
+      state.simExplorers = Math.max(8, state.simExplorers + (Math.random()<0.5?1:-1));
+      updateUI();
+    }
+  }, 7000);
+}
+
+init();
+</script>
+</body>
+</html>
