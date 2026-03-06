@@ -8,13 +8,25 @@
 <title>מגלי היקום</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Heebo:wght@300;400;700&display=swap');
-:root{--gold:#f0d080;--gold2:#c8a040;--cyan:#50eeff;--crimson:#ff4466;--green:#44ffaa;--void:#000008;--deep:#04080f;--dim:#2a3a5a;--mid:#5060a0}
+:root{--gold:#f0d080;--gold2:#c8a040;--cyan:#50eeff;--crimson:#ff4466;--green:#44ffaa;--void:#00000a;--deep:#04080f;--dim:#2a3a5a;--mid:#5060a0}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{width:100%;height:100%;overflow:hidden;background:var(--void);color:#fff;font-family:'Heebo',sans-serif;user-select:none}
-#cosmos-bg{position:fixed;inset:0;z-index:0}
-#reveal-mask{position:fixed;inset:0;z-index:1}
-#vignette{position:fixed;inset:0;z-index:2;pointer-events:none;background:radial-gradient(ellipse 80% 80% at 50% 50%,transparent 0%,rgba(0,0,12,0.45) 52%,rgba(0,0,12,0.97) 100%);transition:background 0.8s}
-#scanlines{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:0.025;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,0.1) 2px,rgba(255,255,255,0.1) 3px)}
+
+/* Canvases stack */
+#cosmos-bg  {position:fixed;inset:0;z-index:0}
+#reveal-mask{position:fixed;inset:0;z-index:1;image-rendering:pixelated}
+
+#vignette{position:fixed;inset:0;z-index:2;pointer-events:none;
+  background:radial-gradient(ellipse 85% 85% at 50% 50%,transparent 0%,rgba(0,0,12,0.4) 55%,rgba(0,0,12,0.97) 100%);
+  transition:background 1s}
+#scanlines{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:0.022;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,0.1) 2px,rgba(255,255,255,0.1) 3px)}
+
+/* Pixel flash overlay */
+@keyframes px-flash{0%{opacity:1;transform:scale(1.6)}100%{opacity:0;transform:scale(1)}}
+.px-flash{position:fixed;pointer-events:none;z-index:22;animation:px-flash 0.35s ease-out forwards}
+
+/* ══ COSMIC EVENT ══ */
 #evt-overlay{position:fixed;inset:0;z-index:60;pointer-events:none;display:flex;align-items:center;justify-content:center;opacity:0}
 #evt-overlay.show{animation:ev-life 4.5s ease-out forwards}
 @keyframes ev-life{0%{opacity:0}10%{opacity:1}75%{opacity:1}100%{opacity:0}}
@@ -22,13 +34,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--void);color:#f
 @keyframes ev-s{0%{transform:scale(0.4);filter:blur(20px)}14%{transform:scale(1.03);filter:blur(0)}80%{transform:scale(1)}100%{transform:scale(1.1);filter:blur(6px)}}
 .ev-name{font-family:'Cinzel',serif;font-size:clamp(2rem,8vw,4.5rem);font-weight:900;letter-spacing:0.25em;text-transform:uppercase;text-shadow:0 0 60px currentColor,0 0 120px currentColor,0 0 200px currentColor;margin-bottom:10px}
 .ev-desc{font-size:clamp(0.7rem,2vw,0.95rem);letter-spacing:0.35em;color:var(--mid);text-transform:uppercase}
-#bigbang{position:fixed;inset:0;z-index:200;background:#000010;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;opacity:0;pointer-events:none}
+
+/* ══ BIG BANG ══ */
+#bigbang{position:fixed;inset:0;z-index:200;background:#00000a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;opacity:0;pointer-events:none}
 #bigbang.active{pointer-events:all;animation:bb-life 5.5s ease-in-out forwards}
 @keyframes bb-life{0%{opacity:0}8%{opacity:1}80%{opacity:1}100%{opacity:0}}
 .bb-ring{position:absolute;border-radius:50%;border:1.5px solid var(--gold);animation:bb-r 4s ease-out forwards;opacity:0}
 @keyframes bb-r{0%{width:0;height:0;opacity:1}100%{width:260vmax;height:260vmax;opacity:0;border-color:var(--cyan)}}
 .bb-sup{font-family:'Cinzel',serif;font-size:clamp(0.7rem,2vw,1rem);letter-spacing:0.5em;color:var(--gold);z-index:1;text-align:center}
 .bb-name{font-family:'Cinzel',serif;font-size:clamp(1.5rem,5vw,3.5rem);font-weight:900;letter-spacing:0.3em;color:#fff;text-shadow:0 0 80px var(--gold),0 0 160px rgba(240,208,128,0.4);z-index:1;text-align:center}
+
+/* ══ SIDE PANEL ══ */
 #side-panel{position:fixed;left:clamp(8px,1.5vw,16px);top:50%;transform:translateY(-50%);z-index:12;width:clamp(145px,19vw,185px);pointer-events:all}
 .tabs{display:flex;border-bottom:1px solid rgba(240,208,128,0.1)}
 .tab-btn{flex:1;padding:6px 0;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--dim);font-size:0.52rem;letter-spacing:0.18em;text-transform:uppercase;cursor:pointer;font-family:'Heebo',sans-serif;transition:all 0.2s;margin-bottom:-1px}
@@ -63,15 +79,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--void);color:#f
 .msg-input:focus{border-color:rgba(80,238,255,0.4)}
 .msg-send{padding:5px 8px;background:rgba(80,238,255,0.08);border:1px solid rgba(80,238,255,0.2);color:var(--cyan);font-size:0.7rem;cursor:pointer;transition:all 0.15s;font-family:'Heebo',sans-serif}
 .msg-send:hover{background:rgba(80,238,255,0.18);border-color:var(--cyan)}
+
+/* ══ MAIN UI ══ */
 #ui{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;justify-content:space-between;padding:clamp(14px,3vw,26px);pointer-events:none}
 #top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .top-block{display:flex;flex-direction:column;gap:3px}
 .lbl{font-size:clamp(0.48rem,1.1vw,0.58rem);letter-spacing:0.4em;color:var(--dim);text-transform:uppercase}
-.uni-name{font-family:'Cinzel',serif;font-size:clamp(0.85rem,2.5vw,1.2rem);font-weight:700;letter-spacing:0.2em;color:var(--gold);text-shadow:0 0 25px rgba(240,208,128,0.6),0 0 50px rgba(240,208,128,0.2)}
+.uni-name{font-family:'Cinzel',serif;font-size:clamp(0.9rem,2.5vw,1.25rem);font-weight:700;letter-spacing:0.2em;color:var(--gold);text-shadow:0 0 25px rgba(240,208,128,0.6),0 0 50px rgba(240,208,128,0.2)}
 .uni-gen{font-size:clamp(0.46rem,1vw,0.56rem);letter-spacing:0.25em;color:var(--dim)}
 .live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);margin-left:6px;animation:ldot 1.8s ease-in-out infinite}
 @keyframes ldot{0%,100%{opacity:0.3;transform:scale(0.7)}50%{opacity:1;transform:scale(1.2)}}
-.live-count{font-family:'Cinzel',serif;font-size:clamp(0.85rem,2.5vw,1.1rem);color:var(--green);display:flex;align-items:center;justify-content:flex-end;text-shadow:0 0 15px rgba(68,255,170,0.5)}
+.live-count{font-family:'Cinzel',serif;font-size:clamp(0.9rem,2.5vw,1.1rem);color:var(--green);display:flex;align-items:center;justify-content:flex-end;text-shadow:0 0 15px rgba(68,255,170,0.5)}
 #bottom{display:flex;flex-direction:column;align-items:center;gap:clamp(10px,2.5vh,18px)}
 #prog-wrap{width:min(440px,80vw)}
 .prog-top{display:flex;justify-content:space-between;margin-bottom:6px}
@@ -124,33 +142,62 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--void);color:#f
 </head>
 <body>
 <div id="load"><div class="load-t">מגלי היקום</div><div class="load-s">טוען את הקוסמוס...</div></div>
+
 <canvas id="cosmos-bg"></canvas>
 <canvas id="reveal-mask"></canvas>
-<div id="vignette"></div><div id="scanlines"></div>
-<div id="evt-overlay"><div class="ev-wrap"><div class="ev-name" id="ev-name">SUPERNOVA</div><div class="ev-desc" id="ev-desc"></div></div></div>
+<div id="vignette"></div>
+<div id="scanlines"></div>
+
+<div id="evt-overlay">
+  <div class="ev-wrap">
+    <div class="ev-name" id="ev-name">SUPERNOVA</div>
+    <div class="ev-desc" id="ev-desc"></div>
+  </div>
+</div>
+
 <div id="bigbang">
-  <div class="bb-ring" style="animation-delay:0s"></div><div class="bb-ring" style="animation-delay:0.5s"></div>
-  <div class="bb-ring" style="animation-delay:1s"></div><div class="bb-ring" style="animation-delay:1.6s"></div>
+  <div class="bb-ring" style="animation-delay:0s"></div>
+  <div class="bb-ring" style="animation-delay:0.5s"></div>
+  <div class="bb-ring" style="animation-delay:1s"></div>
+  <div class="bb-ring" style="animation-delay:1.6s"></div>
   <div class="bb-sup" id="bb-sup">יקום נחשף במלואו — יקום חדש נולד</div>
   <div class="bb-name" id="bb-name"></div>
 </div>
+
 <div id="side-panel">
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('lb')">🏆 טופ</button>
     <button class="tab-btn" onclick="switchTab('tl')">⏳ ציר</button>
     <button class="tab-btn" onclick="switchTab('msg')">💬 קהל</button>
   </div>
-  <div class="tab-pane active" id="tab-lb"><div class="lb-header">חוקרי היקום הפעילים</div><div id="lb-rows"></div></div>
-  <div class="tab-pane" id="tab-tl"><div class="tl-wrap" id="tl-wrap"></div></div>
+  <div class="tab-pane active" id="tab-lb">
+    <div class="lb-header">חוקרי היקום הפעילים</div>
+    <div id="lb-rows"></div>
+  </div>
+  <div class="tab-pane" id="tab-tl">
+    <div class="tl-wrap" id="tl-wrap"></div>
+  </div>
   <div class="tab-pane" id="tab-msg">
     <div class="msg-feed" id="msg-feed"></div>
-    <div class="msg-input-wrap"><input class="msg-input" id="msg-input" placeholder="כתוב..." maxlength="60"><button class="msg-send" onclick="sendMsg()">→</button></div>
+    <div class="msg-input-wrap">
+      <input class="msg-input" id="msg-input" placeholder="כתוב..." maxlength="60">
+      <button class="msg-send" onclick="sendMsg()">→</button>
+    </div>
   </div>
 </div>
+
 <div id="ui">
   <div id="top">
-    <div class="top-block"><div class="lbl">יקום פעיל</div><div class="uni-name" id="uni-name">—</div><div class="uni-gen" id="uni-gen">דור ראשון</div></div>
-    <div class="top-block" style="align-items:flex-end"><div class="lbl">חוקרים עכשיו</div><div class="live-count"><span class="live-dot"></span><span id="live-count">—</span></div><div class="lbl" style="font-size:0.46rem">ברחבי הגלקסיה</div></div>
+    <div class="top-block">
+      <div class="lbl">יקום פעיל</div>
+      <div class="uni-name" id="uni-name">—</div>
+      <div class="uni-gen" id="uni-gen">דור ראשון</div>
+    </div>
+    <div class="top-block" style="align-items:flex-end">
+      <div class="lbl">חוקרים עכשיו</div>
+      <div class="live-count"><span class="live-dot"></span><span id="live-count">—</span></div>
+      <div class="lbl" style="font-size:0.46rem">ברחבי הגלקסיה</div>
+    </div>
   </div>
   <div></div>
   <div id="bottom">
@@ -174,160 +221,459 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--void);color:#f
   </div>
 </div>
 <div id="toasts"></div>
+
 <script>
-const FIREBASE_URL=''; // ← Firebase URL שלך
-const UNIVERSE_TARGET=10000,MAX_CPS=8,MIN_MS=120;
-const MILESTONES=[
-  {at:500,name:'NEBULA',he:'ערפילית נולדת',color:'#9966ff',desc:'ענן גז ואבק קוסמי'},
-  {at:1500,name:'PULSAR',he:'פולסר מסתובב',color:'#44ddff',desc:'קרינה קוסמית בקצב מדויק'},
-  {at:3000,name:'SUPERNOVA',he:'סופרנובה!',color:'#ff7030',desc:'כוכב מתפוצץ — מיליארד שמשות'},
-  {at:5000,name:'QUASAR',he:'קוואזר בוהק',color:'#ffcc20',desc:'ליבת גלקסיה בלהב'},
-  {at:8000,name:'BLACK HOLE',he:'חור שחור',color:'#e0e0ff',desc:'שובר הזמן והמרחב'},
-  {at:10000,name:'UNIVERSE REVEALED',he:'היקום נחשף!',color:'#f0d080',desc:'יקום חדש נולד'},
+// ══════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════
+const FIREBASE_URL = ''; // ← הכנס Firebase URL שלך כאן
+const UNIVERSE_TARGET = 10000;
+const MAX_CPS = 8, MIN_MS = 120;
+
+// Pixel size for reveal grid (pixels on screen per cell)
+const PX = 12;
+
+const MILESTONES = [
+  {at:500,  name:'NEBULA',            he:'ערפילית נולדת', color:'#9966ff', desc:'ענן גז ואבק קוסמי'},
+  {at:1500, name:'PULSAR',            he:'פולסר מסתובב',  color:'#44ddff', desc:'קרינה קוסמית בקצב מדויק'},
+  {at:3000, name:'SUPERNOVA',         he:'סופרנובה!',      color:'#ff7030', desc:'כוכב מתפוצץ — מיליארד שמשות'},
+  {at:5000, name:'QUASAR',            he:'קוואזר בוהק',   color:'#ffcc20', desc:'ליבת גלקסיה בלהב'},
+  {at:8000, name:'BLACK HOLE',        he:'חור שחור',       color:'#e0e0ff', desc:'שובר הזמן והמרחב'},
+  {at:10000,name:'UNIVERSE REVEALED', he:'היקום נחשף!',   color:'#f0d080', desc:'יקום חדש נולד'},
 ];
-const UNI_PALETTES=[
-  {name:'ALPHA PRIME',bg:['#0a1a5a','#0d2a70','#180840','#08102a'],accent:'#4488ff',stars:'#aaccff',glow:'rgba(40,80,255,0.12)'},
-  {name:'KEPLER VOID',bg:['#3a0a0a','#2a1005','#1a1200','#0a1a05'],accent:'#ff6633',stars:'#ffccaa',glow:'rgba(255,80,30,0.1)'},
-  {name:'ANDROMEDA-7',bg:['#051a10','#082010','#001525','#040e18'],accent:'#33ffaa',stars:'#aaffcc',glow:'rgba(30,255,140,0.1)'},
-  {name:'SIRIUS DEEP',bg:['#120820','#0a0530','#200830','#080018'],accent:'#bb66ff',stars:'#ddaaff',glow:'rgba(160,60,255,0.12)'},
-  {name:'NOVA TERMINUS',bg:['#2a1400','#1e0c00','#120800','#0a0400'],accent:'#ffaa00',stars:'#ffddaa',glow:'rgba(255,150,0,0.1)'},
-  {name:'CYGNUS BELT',bg:['#001a30','#00102a','#001840','#000c20'],accent:'#00ccff',stars:'#aaeeff',glow:'rgba(0,180,255,0.1)'},
-  {name:'LYRA EXPANSE',bg:['#1a0030','#140020','#0c0018','#180028'],accent:'#ff44cc',stars:'#ffaaee',glow:'rgba(255,40,200,0.1)'},
-  {name:'VEGA HORIZON',bg:['#002818','#001c10','#002010','#000e08'],accent:'#00ffcc',stars:'#aaffee',glow:'rgba(0,255,180,0.1)'},
+
+// Each universe: distinct color palette for the starfield
+const UNI_PALETTES = [
+  {name:'ALPHA PRIME',   tint:[20,40,120],  accent:[80,140,255],  dustColor:[10,20,80]},
+  {name:'KEPLER VOID',   tint:[80,15,10],   accent:[255,100,40],  dustColor:[60,10,5]},
+  {name:'ANDROMEDA-7',   tint:[10,50,30],   accent:[40,220,140],  dustColor:[5,30,15]},
+  {name:'SIRIUS DEEP',   tint:[30,10,60],   accent:[180,80,255],  dustColor:[20,5,40]},
+  {name:'NOVA TERMINUS', tint:[80,30,0],    accent:[255,160,20],  dustColor:[50,20,0]},
+  {name:'CYGNUS BELT',   tint:[0,30,70],    accent:[20,200,255],  dustColor:[0,15,45]},
+  {name:'LYRA EXPANSE',  tint:[50,0,70],    accent:[255,60,200],  dustColor:[30,0,50]},
+  {name:'VEGA HORIZON',  tint:[0,60,40],    accent:[0,255,180],   dustColor:[0,35,22]},
 ];
 const GEN_HE=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שביעי','שמיני','תשיעי','עשירי'];
 
-// ── PROCEDURAL COSMOS ──
-const bgC=document.getElementById('cosmos-bg'),bgCtx=bgC.getContext('2d');
-function resizeBg(){bgC.width=window.innerWidth;bgC.height=window.innerHeight;}
+// ══════════════════════════════════════════
+// PROCEDURAL STARFIELD — rich, dark, real-looking
+// ══════════════════════════════════════════
+const bgC = document.getElementById('cosmos-bg');
+const bgCtx = bgC.getContext('2d');
 
-function seededRng(seed){let s=seed|0;return()=>{s=Math.imul(s^(s>>>16),0x45d9f3b);s^=s>>>11;return((s>>>0)/4294967296);};}
+function seededRng(seed) {
+  let s = seed | 0;
+  return () => { s = Math.imul(s ^ (s >>> 16), 0x45d9f3b); s ^= s >>> 11; return (s >>> 0) / 4294967296; };
+}
 
-function hex2rgba(h,a){const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return`rgba(${r},${g},${b},${a})`;}
-function hex2rgb(h){return`${parseInt(h.slice(1,3),16)},${parseInt(h.slice(3,5),16)},${parseInt(h.slice(5,7),16)}`;}
+function drawCosmos(uIdx) {
+  const W = bgC.width, H = bgC.height;
+  const pal = UNI_PALETTES[uIdx % UNI_PALETTES.length];
+  const rng = seededRng(uIdx * 6271 + 4919);
+  const [tr, tg, tb] = pal.tint;
+  const [ar, ag, ab] = pal.accent;
+  const [dr, dg, db] = pal.dustColor;
 
-function drawCosmos(uIdx){
-  const W=bgC.width,H=bgC.height,pal=UNI_PALETTES[uIdx%UNI_PALETTES.length],rng=seededRng(uIdx*7919+1234);
-  bgCtx.clearRect(0,0,W,H);
+  bgCtx.clearRect(0, 0, W, H);
 
-  // void base
-  const bg=bgCtx.createLinearGradient(0,0,W,H);
-  bg.addColorStop(0,pal.bg[0]); bg.addColorStop(0.33,pal.bg[1]); bg.addColorStop(0.66,pal.bg[2]); bg.addColorStop(1,pal.bg[3]);
-  bgCtx.fillStyle=bg; bgCtx.fillRect(0,0,W,H);
+  // 1. Pure black base
+  bgCtx.fillStyle = '#00000a';
+  bgCtx.fillRect(0, 0, W, H);
 
-  // large nebula blobs
-  for(let i=0;i<8+Math.floor(rng()*5);i++){
-    const cx=rng()*W,cy=rng()*H,rx=W*(0.12+rng()*0.3),ry=H*(0.1+rng()*0.28),rot=rng()*Math.PI;
-    bgCtx.save(); bgCtx.translate(cx,cy); bgCtx.rotate(rot); bgCtx.scale(1,ry/rx);
-    const g=bgCtx.createRadialGradient(0,0,0,0,0,rx);
-    const a=0.05+rng()*0.1;
-    g.addColorStop(0,hex2rgba(pal.accent,a*1.8)); g.addColorStop(0.4,hex2rgba(pal.bg[Math.floor(rng()*4)],a)); g.addColorStop(1,'rgba(0,0,0,0)');
-    bgCtx.fillStyle=g; bgCtx.beginPath(); bgCtx.arc(0,0,rx,0,Math.PI*2); bgCtx.fill(); bgCtx.restore();
+  // 2. Very subtle deep color tint (barely visible)
+  const tintG = bgCtx.createRadialGradient(W*0.5, H*0.5, 0, W*0.5, H*0.5, Math.max(W,H)*0.8);
+  tintG.addColorStop(0, `rgba(${tr},${tg},${tb},0.18)`);
+  tintG.addColorStop(0.6, `rgba(${tr},${tg},${tb},0.06)`);
+  tintG.addColorStop(1, 'rgba(0,0,0,0)');
+  bgCtx.fillStyle = tintG; bgCtx.fillRect(0, 0, W, H);
+
+  // 3. A couple of faint nebula wisps (very low opacity, not blobby)
+  for (let i = 0; i < 3; i++) {
+    const nx = rng()*W, ny = rng()*H;
+    const nr = Math.min(W,H) * (0.08 + rng()*0.12);
+    const na = 0.04 + rng()*0.05;
+    const ng = bgCtx.createRadialGradient(nx,ny,0,nx,ny,nr);
+    ng.addColorStop(0, `rgba(${ar},${ag},${ab},${na})`);
+    ng.addColorStop(0.5, `rgba(${ar},${ag},${ab},${na*0.4})`);
+    ng.addColorStop(1, 'rgba(0,0,0,0)');
+    bgCtx.fillStyle = ng; bgCtx.beginPath(); bgCtx.arc(nx,ny,nr,0,Math.PI*2); bgCtx.fill();
   }
 
-  // bright nebula core glow
-  const cx=W*(0.25+rng()*0.5),cy=H*(0.25+rng()*0.5),cr=Math.min(W,H)*(0.15+rng()*0.15);
-  const cg=bgCtx.createRadialGradient(cx,cy,0,cx,cy,cr);
-  cg.addColorStop(0,hex2rgba(pal.accent,0.22)); cg.addColorStop(0.35,hex2rgba(pal.accent,0.08)); cg.addColorStop(0.7,pal.glow.replace(')',',0.03)')); cg.addColorStop(1,'rgba(0,0,0,0)');
-  bgCtx.fillStyle=cg; bgCtx.beginPath(); bgCtx.arc(cx,cy,cr,0,Math.PI*2); bgCtx.fill();
+  // 4. THE STAR FIELD — this is the main visual ——————————
 
-  // secondary core
-  const cx2=W*(0.2+rng()*0.6),cy2=H*(0.2+rng()*0.6),cr2=cr*0.5;
-  const cg2=bgCtx.createRadialGradient(cx2,cy2,0,cx2,cy2,cr2);
-  cg2.addColorStop(0,hex2rgba(pal.accent,0.15)); cg2.addColorStop(1,'rgba(0,0,0,0)');
-  bgCtx.fillStyle=cg2; bgCtx.beginPath(); bgCtx.arc(cx2,cy2,cr2,0,Math.PI*2); bgCtx.fill();
-
-  // dust lanes
-  for(let i=0;i<5;i++){
-    const x1=rng()*W,y1=rng()*H,x2=rng()*W,y2=rng()*H;
-    const lg=bgCtx.createLinearGradient(x1,y1,x2,y2);
-    lg.addColorStop(0,'rgba(0,0,0,0)'); lg.addColorStop(0.5,`rgba(0,0,0,${0.03+rng()*0.05})`); lg.addColorStop(1,'rgba(0,0,0,0)');
-    bgCtx.strokeStyle=lg; bgCtx.lineWidth=20+rng()*50; bgCtx.beginPath(); bgCtx.moveTo(x1,y1); bgCtx.lineTo(x2,y2); bgCtx.stroke();
+  // Layer A: thousands of tiny dust-like stars (1px, very dim)
+  const nDust = Math.floor(W * H / 120);
+  for (let i = 0; i < nDust; i++) {
+    const x = rng()*W, y = rng()*H;
+    const bright = 0.04 + rng()*0.22;
+    // Slight color variation
+    const rv = rng();
+    let sr=255,sg=255,sb=255;
+    if(rv<0.15){sr=180;sg=200;sb=255} // blue-white
+    else if(rv<0.25){sr=255;sg=220;sb=180} // warm yellow
+    else if(rv<0.30){sr=255;sg=180;sb=180} // red dwarf
+    bgCtx.fillStyle = `rgba(${sr},${sg},${sb},${bright})`;
+    bgCtx.fillRect(Math.round(x), Math.round(y), 1, 1);
   }
 
-  // stars
-  const ns=Math.floor(W*H/600);
-  for(let i=0;i<ns;i++){
-    const sx=rng()*W,sy=rng()*H,v=rng();
-    const r=v<0.82?0.4+rng()*0.5:v<0.95?1+rng()*0.8:1.6+rng()*1.4;
-    const bright=0.25+rng()*0.75;
-    bgCtx.beginPath(); bgCtx.arc(sx,sy,r,0,Math.PI*2);
-    bgCtx.fillStyle=`rgba(${hex2rgb(pal.stars)},${bright})`; bgCtx.fill();
-    if(r>1.5){// diffraction cross
-      bgCtx.strokeStyle=`rgba(${hex2rgb(pal.stars)},${bright*0.25})`; bgCtx.lineWidth=0.5;
-      bgCtx.beginPath(); bgCtx.moveTo(sx-r*5,sy); bgCtx.lineTo(sx+r*5,sy); bgCtx.stroke();
-      bgCtx.beginPath(); bgCtx.moveTo(sx,sy-r*5); bgCtx.lineTo(sx,sy+r*5); bgCtx.stroke();
-    }
+  // Layer B: medium stars (1-1.5px, visible)
+  const nMed = Math.floor(W * H / 1400);
+  for (let i = 0; i < nMed; i++) {
+    const x = rng()*W, y = rng()*H;
+    const bright = 0.3 + rng()*0.6;
+    const rv = rng();
+    let sr=255,sg=255,sb=255;
+    if(rv<0.2){sr=160;sg=190;sb=255}
+    else if(rv<0.35){sr=255;sg=235;sb=180}
+    bgCtx.beginPath(); bgCtx.arc(x, y, 0.6 + rng()*0.7, 0, Math.PI*2);
+    bgCtx.fillStyle = `rgba(${sr},${sg},${sb},${bright})`; bgCtx.fill();
+  }
+
+  // Layer C: bright feature stars with glow + diffraction spikes
+  const nBright = 8 + Math.floor(rng() * 12);
+  for (let i = 0; i < nBright; i++) {
+    const x = rng()*W, y = rng()*H;
+    const r = 1.3 + rng()*1.8;
+    const bright = 0.75 + rng()*0.25;
+    // Star color (blue giants, yellow giants, white)
+    const rv = rng();
+    let sr=255,sg=255,sb=255;
+    if(rv<0.3){sr=180;sg=210;sb=255;} // blue giant
+    else if(rv<0.5){sr=255;sg=245;sb=180;} // yellow giant
+    else if(rv<0.65){sr=255;sg=200;sb=150;} // orange giant
+
+    // Glow halo
+    const glow = bgCtx.createRadialGradient(x,y,0,x,y,r*5);
+    glow.addColorStop(0,`rgba(${sr},${sg},${sb},0.25)`);
+    glow.addColorStop(0.4,`rgba(${sr},${sg},${sb},0.06)`);
+    glow.addColorStop(1,'rgba(0,0,0,0)');
+    bgCtx.fillStyle=glow; bgCtx.beginPath(); bgCtx.arc(x,y,r*5,0,Math.PI*2); bgCtx.fill();
+
+    // Star core
+    bgCtx.beginPath(); bgCtx.arc(x,y,r,0,Math.PI*2);
+    bgCtx.fillStyle=`rgba(${sr},${sg},${sb},${bright})`; bgCtx.fill();
+
+    // Diffraction cross (JWST-style 4-spike)
+    const spikeLen = r * 8;
+    bgCtx.strokeStyle=`rgba(${sr},${sg},${sb},0.18)`; bgCtx.lineWidth=0.6;
+    bgCtx.beginPath(); bgCtx.moveTo(x-spikeLen,y); bgCtx.lineTo(x+spikeLen,y); bgCtx.stroke();
+    bgCtx.beginPath(); bgCtx.moveTo(x,y-spikeLen); bgCtx.lineTo(x,y+spikeLen); bgCtx.stroke();
+    // Diagonal spikes (JWST has 6 spikes)
+    const d45 = spikeLen * 0.55;
+    bgCtx.strokeStyle=`rgba(${sr},${sg},${sb},0.1)`;
+    bgCtx.beginPath(); bgCtx.moveTo(x-d45,y-d45); bgCtx.lineTo(x+d45,y+d45); bgCtx.stroke();
+    bgCtx.beginPath(); bgCtx.moveTo(x+d45,y-d45); bgCtx.lineTo(x-d45,y+d45); bgCtx.stroke();
+  }
+
+  // 5. Star cluster region (dense patch)
+  const clx = rng()*W, cly = rng()*H, clr = Math.min(W,H)*0.12;
+  const nCluster = Math.floor(clr * clr * Math.PI / 200);
+  for (let i = 0; i < nCluster; i++) {
+    const angle = rng()*Math.PI*2;
+    const dist = Math.sqrt(rng()) * clr; // sqrt for uniform distribution
+    const x = clx + Math.cos(angle)*dist;
+    const y = cly + Math.sin(angle)*dist;
+    const bright = 0.1 + rng()*0.5;
+    bgCtx.fillStyle = `rgba(${ar},${ag},${ab},${bright})`;
+    bgCtx.fillRect(Math.round(x),Math.round(y),1,1);
   }
 }
 
-// ── REVEAL MASK ──
-const maskC=document.getElementById('reveal-mask'),maskCtx=maskC.getContext('2d');
-let circles=[];
-function resizeMask(){maskC.width=window.innerWidth;maskC.height=window.innerHeight;rebuildMask();}
-function revealR(){return Math.min(maskC.width,maskC.height)*(0.038+Math.random()*0.032);}
-function rebuildMask(){
-  maskCtx.clearRect(0,0,maskC.width,maskC.height);
-  maskCtx.fillStyle='rgba(0,0,12,1)'; maskCtx.fillRect(0,0,maskC.width,maskC.height);
-  maskCtx.globalCompositeOperation='destination-out';
-  for(const c of circles){const g=maskCtx.createRadialGradient(c.x,c.y,0,c.x,c.y,c.r);g.addColorStop(0,'rgba(0,0,0,1)');g.addColorStop(0.6,'rgba(0,0,0,0.95)');g.addColorStop(1,'rgba(0,0,0,0)');maskCtx.fillStyle=g;maskCtx.beginPath();maskCtx.arc(c.x,c.y,c.r,0,Math.PI*2);maskCtx.fill();}
-  maskCtx.globalCompositeOperation='source-over';
-}
-function addCircle(){
-  const x=Math.random()*maskC.width,y=Math.random()*maskC.height,r=revealR();
-  circles.push({x,y,r,xp:x/maskC.width,yp:y/maskC.height,rp:r/Math.min(maskC.width,maskC.height)});
-  maskCtx.globalCompositeOperation='destination-out';
-  const g=maskCtx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,'rgba(0,0,0,1)');g.addColorStop(0.6,'rgba(0,0,0,0.95)');g.addColorStop(1,'rgba(0,0,0,0)');
-  maskCtx.fillStyle=g;maskCtx.beginPath();maskCtx.arc(x,y,r,0,Math.PI*2);maskCtx.fill();
-  maskCtx.globalCompositeOperation='source-over';
+// ══════════════════════════════════════════
+// PIXEL REVEAL MASK
+// ══════════════════════════════════════════
+const maskC = document.getElementById('reveal-mask');
+const maskCtx = maskC.getContext('2d');
+let revealedPixels = new Set(); // "col,row" keys
+let gridCols = 1, gridRows = 1;
+let circles = []; // for save/load: array of {xp,yp}
+
+function resizeMask() {
+  maskC.width = window.innerWidth;
+  maskC.height = window.innerHeight;
+  gridCols = Math.ceil(maskC.width / PX);
+  gridRows = Math.ceil(maskC.height / PX);
+  rebuildMask();
 }
 
-// ── STATE ──
-let state={totalClicks:0,uClicks:0,uIndex:0,generation:0,doneUniverses:0,leaderboard:[],messages:[],timelineEvents:[]};
-let myName='',myClicks=0,lastClickTime=0,clicksThisSec=0,secStart=Date.now(),transitioning=false,lastMilestone=-1;
+function rebuildMask() {
+  // Start fully black (hidden)
+  maskCtx.fillStyle = 'rgba(0,0,12,1)';
+  maskCtx.fillRect(0, 0, maskC.width, maskC.height);
+  // Cut out revealed pixels
+  maskCtx.globalCompositeOperation = 'destination-out';
+  maskCtx.fillStyle = 'rgba(0,0,0,1)';
+  for (const key of revealedPixels) {
+    const [c, r] = key.split(',');
+    maskCtx.fillRect(+c * PX, +r * PX, PX, PX);
+  }
+  maskCtx.globalCompositeOperation = 'source-over';
+}
 
-// ── DB ──
-async function dbGet(p){if(!FIREBASE_URL){try{return JSON.parse(localStorage.getItem('cv5-'+p)||'null')}catch(e){return null}}try{const r=await fetch(`${FIREBASE_URL}/${p}.json`);return await r.json()}catch(e){return null}}
-async function dbSet(p,d){if(!FIREBASE_URL){try{localStorage.setItem('cv5-'+p,JSON.stringify(d))}catch(e){}return}try{await fetch(`${FIREBASE_URL}/${p}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)})}catch(e){}}
+function revealOnePixel() {
+  // Pick a random unrevealed cell
+  const total = gridCols * gridRows;
+  if (revealedPixels.size >= total) return;
+
+  let col, row, key, tries = 0;
+  do {
+    col = Math.floor(Math.random() * gridCols);
+    row = Math.floor(Math.random() * gridRows);
+    key = `${col},${row}`;
+    tries++;
+  } while (revealedPixels.has(key) && tries < 30);
+
+  if (revealedPixels.has(key)) return;
+  revealedPixels.add(key);
+
+  // Erase that cell from mask
+  maskCtx.globalCompositeOperation = 'destination-out';
+  maskCtx.fillStyle = 'rgba(0,0,0,1)';
+  maskCtx.fillRect(col * PX, row * PX, PX, PX);
+  maskCtx.globalCompositeOperation = 'source-over';
+
+  // Flash effect on the pixel
+  const el = document.createElement('div');
+  el.className = 'px-flash';
+  el.style.cssText = `left:${col*PX}px;top:${row*PX}px;width:${PX}px;height:${PX}px;background:rgba(255,255,220,0.95);`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 380);
+
+  // Save for sync
+  circles.push({ xp: (col + 0.5) / gridCols, yp: (row + 0.5) / gridRows });
+}
+
+function restorePixelsFromCircles(savedCircles) {
+  revealedPixels = new Set();
+  circles = savedCircles;
+  for (const c of savedCircles) {
+    const col = Math.min(gridCols-1, Math.floor(c.xp * gridCols));
+    const row = Math.min(gridRows-1, Math.floor(c.yp * gridRows));
+    revealedPixels.add(`${col},${row}`);
+  }
+  rebuildMask();
+}
+
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+let state = {totalClicks:0,uClicks:0,uIndex:0,generation:0,doneUniverses:0,leaderboard:[],messages:[],timelineEvents:[]};
+let myName = '', myClicks = 0;
+let lastClickTime = 0, clicksThisSec = 0, secStart = Date.now();
+let transitioning = false, lastMilestone = -1;
+
+// ══════════════════════════════════════════
+// DB
+// ══════════════════════════════════════════
+async function dbGet(p) {
+  if (!FIREBASE_URL) { try { return JSON.parse(localStorage.getItem('cv6-'+p)||'null'); } catch(e) { return null; } }
+  try { const r = await fetch(`${FIREBASE_URL}/${p}.json`); return await r.json(); } catch(e) { return null; }
+}
+async function dbSet(p, d) {
+  if (!FIREBASE_URL) { try { localStorage.setItem('cv6-'+p, JSON.stringify(d)); } catch(e) {} return; }
+  try { await fetch(`${FIREBASE_URL}/${p}.json`, {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)}); } catch(e) {}
+}
+
 let saveTimer;
-function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(async()=>{await dbSet('global',{totalClicks:state.totalClicks,uClicks:state.uClicks,uIndex:state.uIndex,generation:state.generation,doneUniverses:state.doneUniverses,circles:circles.map(c=>({xp:c.xp,yp:c.yp,rp:c.rp})),leaderboard:state.leaderboard,messages:state.messages.slice(-20),timelineEvents:state.timelineEvents});},900);}
-function startLive(){if(!FIREBASE_URL)return;try{const es=new EventSource(`${FIREBASE_URL}/global.json`);es.addEventListener('put',e=>{try{const d=JSON.parse(e.data);if(d&&d.data)applyRemote(d.data)}catch(_){}});}catch(_){}}
-function applyRemote(g){if(!g)return;if(g.totalClicks>state.totalClicks){state.totalClicks=g.totalClicks;state.uClicks=g.uClicks||state.uClicks;}if(g.circles&&g.circles.length>circles.length){circles=g.circles.map(c=>({x:c.xp*maskC.width,y:c.yp*maskC.height,r:c.rp*Math.min(maskC.width,maskC.height),...c}));rebuildMask();}if(g.leaderboard){state.leaderboard=g.leaderboard;renderLB();}if(g.messages){state.messages=g.messages;renderMsgs();}if(g.timelineEvents){state.timelineEvents=g.timelineEvents;renderTL();}updateUI();}
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    await dbSet('global', {
+      totalClicks:state.totalClicks, uClicks:state.uClicks, uIndex:state.uIndex,
+      generation:state.generation, doneUniverses:state.doneUniverses,
+      circles, leaderboard:state.leaderboard,
+      messages:state.messages.slice(-20), timelineEvents:state.timelineEvents,
+    });
+  }, 900);
+}
 
-// ── TABS ──
-function switchTab(id){document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['lb','tl','msg'][i]===id));document.querySelectorAll('.tab-pane').forEach(p=>p.classList.toggle('active',p.id==='tab-'+id));}
+function startLive() {
+  if (!FIREBASE_URL) return;
+  try {
+    const es = new EventSource(`${FIREBASE_URL}/global.json`);
+    es.addEventListener('put', e => {
+      try { const d = JSON.parse(e.data); if (d && d.data) applyRemote(d.data); } catch(_) {}
+    });
+  } catch(_) {}
+}
 
-// ── LEADERBOARD ──
-function updateLB(){const lb=state.leaderboard;const i=lb.findIndex(e=>e.n===myName);if(i>=0)lb[i].s=myClicks;else lb.push({n:myName,s:myClicks});lb.sort((a,b)=>b.s-a.s);state.leaderboard=lb.slice(0,8);renderLB();}
-function renderLB(){const w=document.getElementById('lb-rows');w.innerHTML='';const rc=['r1','r2','r3'];state.leaderboard.slice(0,6).forEach((e,i)=>{const m=e.n===myName;const row=document.createElement('div');row.className='lb-row'+(m?' me':'');row.innerHTML=`<span class="lb-rank ${rc[i]||'rx'}">${i+1}</span><span class="lb-name${m?' me':''}">${e.n}</span><span class="lb-score">${(e.s||0).toLocaleString()}</span>`;w.appendChild(row);});}
+function applyRemote(g) {
+  if (!g) return;
+  if (g.totalClicks > state.totalClicks) { state.totalClicks = g.totalClicks; state.uClicks = g.uClicks || state.uClicks; }
+  if (g.circles && g.circles.length > circles.length) restorePixelsFromCircles(g.circles);
+  if (g.leaderboard) { state.leaderboard = g.leaderboard; renderLB(); }
+  if (g.messages) { state.messages = g.messages; renderMsgs(); }
+  if (g.timelineEvents) { state.timelineEvents = g.timelineEvents; renderTL(); }
+  updateUI();
+}
 
-// ── TIMELINE ──
-function recordTL(ev){state.timelineEvents.push({name:ev.name,he:ev.he,color:ev.color,at:state.totalClicks});state.timelineEvents=state.timelineEvents.slice(-12);renderTL();}
-function renderTL(){const w=document.getElementById('tl-wrap');w.innerHTML='';[...state.timelineEvents].reverse().forEach(ev=>{const el=document.createElement('div');el.className='tl-item';el.innerHTML=`<div class="tl-dot" style="background:${ev.color};color:${ev.color}"></div><div><div class="tl-name" style="color:${ev.color}">${ev.name}</div><div class="tl-at">לחיצה #${(ev.at||0).toLocaleString()}</div></div>`;w.appendChild(el);});MILESTONES.filter(m=>m.at>state.uClicks).slice(0,2).forEach(ev=>{const el=document.createElement('div');el.className='tl-item tl-future';el.innerHTML=`<div class="tl-dot"></div><div><div class="tl-name">${ev.name}</div><div class="tl-at">עוד ${(ev.at-state.uClicks).toLocaleString()}</div></div>`;w.appendChild(el);});}
+// ══════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════
+function switchTab(id) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', ['lb','tl','msg'][i]===id));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id==='tab-'+id));
+}
 
-// ── MESSAGES ──
-function sendMsg(){const inp=document.getElementById('msg-input');const t=inp.value.trim();if(!t)return;inp.value='';state.messages.push({n:myName,t,ts:Date.now()});state.messages=state.messages.slice(-20);renderMsgs();scheduleSave();}
-document.getElementById('msg-input').addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg();});
-function renderMsgs(){const f=document.getElementById('msg-feed');f.innerHTML='';[...state.messages].reverse().slice(0,5).forEach(m=>{const mins=Math.round((Date.now()-m.ts)/60000);const ts=mins<1?'עכשיו':mins<60?`לפני ${mins} דק`:'מוקדם';const el=document.createElement('div');el.className='msg-item';el.innerHTML=`<div class="msg-meta"><span class="msg-name">${m.n}</span><span class="msg-time">${ts}</span></div><div class="msg-text">${m.t.replace(/</g,'&lt;')}</div>`;f.appendChild(el);});}
+// ══════════════════════════════════════════
+// LEADERBOARD
+// ══════════════════════════════════════════
+function updateLB() {
+  const lb = state.leaderboard;
+  const i = lb.findIndex(e => e.n === myName);
+  if (i>=0) lb[i].s = myClicks; else lb.push({n:myName,s:myClicks});
+  lb.sort((a,b) => b.s-a.s);
+  state.leaderboard = lb.slice(0,8);
+  renderLB();
+}
+function renderLB() {
+  const w = document.getElementById('lb-rows'); w.innerHTML = '';
+  const rc = ['r1','r2','r3'];
+  state.leaderboard.slice(0,6).forEach((e,i) => {
+    const m = e.n===myName;
+    const row = document.createElement('div'); row.className='lb-row'+(m?' me':'');
+    row.innerHTML = `<span class="lb-rank ${rc[i]||'rx'}">${i+1}</span><span class="lb-name${m?' me':''}">${e.n}</span><span class="lb-score">${(e.s||0).toLocaleString()}</span>`;
+    w.appendChild(row);
+  });
+}
 
-// ── COSMIC EVENT ──
-function cosmicEvent(ev){const ov=document.getElementById('evt-overlay');const en=document.getElementById('ev-name');en.textContent=ev.name;en.style.color=ev.color;en.style.textShadow=`0 0 60px ${ev.color},0 0 120px ${ev.color},0 0 200px ${ev.color}`;document.getElementById('ev-desc').textContent=ev.desc;ov.classList.remove('show');void ov.offsetWidth;ov.classList.add('show');setTimeout(()=>ov.classList.remove('show'),4700);toast(`✦ ${ev.he} — ${ev.desc}`);recordTL(ev);}
+// ══════════════════════════════════════════
+// TIMELINE
+// ══════════════════════════════════════════
+function recordTL(ev) {
+  state.timelineEvents.push({name:ev.name,he:ev.he,color:ev.color,at:state.totalClicks});
+  state.timelineEvents = state.timelineEvents.slice(-12);
+  renderTL();
+}
+function renderTL() {
+  const w = document.getElementById('tl-wrap'); w.innerHTML='';
+  [...state.timelineEvents].reverse().forEach(ev => {
+    const el=document.createElement('div'); el.className='tl-item';
+    el.innerHTML=`<div class="tl-dot" style="background:${ev.color};color:${ev.color}"></div><div><div class="tl-name" style="color:${ev.color}">${ev.name}</div><div class="tl-at">לחיצה #${(ev.at||0).toLocaleString()}</div></div>`;
+    w.appendChild(el);
+  });
+  MILESTONES.filter(m => m.at>state.uClicks).slice(0,2).forEach(ev => {
+    const el=document.createElement('div'); el.className='tl-item tl-future';
+    el.innerHTML=`<div class="tl-dot"></div><div><div class="tl-name">${ev.name}</div><div class="tl-at">עוד ${(ev.at-state.uClicks).toLocaleString()}</div></div>`;
+    w.appendChild(el);
+  });
+}
 
-// ── BIG BANG ──
-async function bigBang(){transitioning=true;state.doneUniverses++;state.generation++;state.uIndex++;const pal=UNI_PALETTES[state.uIndex%UNI_PALETTES.length];document.getElementById('bb-name').textContent=pal.name;document.getElementById('bb-sup').textContent=`יקום ${GEN_HE[(state.generation-1)%GEN_HE.length]} נחשף — יקום חדש נולד`;const bb=document.getElementById('bigbang');bb.classList.add('active');bgC.style.transition='filter 0.3s';bgC.style.filter='brightness(8) saturate(0)';await sleep(5200);state.uClicks=0;circles=[];lastMilestone=-1;bgC.style.filter='';drawCosmos(state.uIndex);rebuildMask();bb.classList.remove('active');updateUI();transitioning=false;scheduleSave();}
-function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+// ══════════════════════════════════════════
+// MESSAGES
+// ══════════════════════════════════════════
+function sendMsg() {
+  const inp = document.getElementById('msg-input');
+  const t = inp.value.trim(); if (!t) return;
+  inp.value = '';
+  state.messages.push({n:myName,t,ts:Date.now()});
+  state.messages = state.messages.slice(-20);
+  renderMsgs(); scheduleSave();
+}
+document.getElementById('msg-input').addEventListener('keydown', e => { if(e.key==='Enter') sendMsg(); });
+function renderMsgs() {
+  const f = document.getElementById('msg-feed'); f.innerHTML='';
+  [...state.messages].reverse().slice(0,5).forEach(m => {
+    const mins = Math.round((Date.now()-m.ts)/60000);
+    const ts = mins<1?'עכשיו':mins<60?`לפני ${mins} דק`:'מוקדם';
+    const el=document.createElement('div'); el.className='msg-item';
+    el.innerHTML=`<div class="msg-meta"><span class="msg-name">${m.n}</span><span class="msg-time">${ts}</span></div><div class="msg-text">${m.t.replace(/</g,'&lt;')}</div>`;
+    f.appendChild(el);
+  });
+}
 
-// ── VFX ──
-function burst(cx,cy){const syms=['✦','·','★','◆','✧','∗'];const cols=['#f0d080','#50eeff','#fff','#ff9050','#cc88ff','#44ffaa'];for(let i=0;i<14;i++){const el=document.createElement('div');el.className='pt';const a=(Math.PI*2/14)*i+(Math.random()-.5)*.6,d=40+Math.random()*90,c=cols[i%cols.length],sz=2+Math.random()*3;el.style.cssText=`left:${cx}px;top:${cy}px;width:${sz}px;height:${sz}px;background:${c};box-shadow:0 0 8px ${c},0 0 16px ${c};--tx:${Math.cos(a)*d}px;--ty:${Math.sin(a)*d}px;--d:${.5+Math.random()*.6}s`;document.body.appendChild(el);setTimeout(()=>el.remove(),1200);}for(let i=0;i<6;i++){const el=document.createElement('div');el.className='sburst';const a=Math.random()*Math.PI*2,d=50+Math.random()*80;el.textContent=syms[i%syms.length];el.style.cssText=`left:${cx}px;top:${cy}px;--tx:${Math.cos(a)*d}px;--ty:${Math.sin(a)*d}px;--dur:${.7+Math.random()*.5}s`;document.body.appendChild(el);setTimeout(()=>el.remove(),1300);}}
-function shockwave(x,y){const el=document.createElement('div');el.className='shockwave';el.style.left=x+'px';el.style.top=y+'px';el.style.width='20px';el.style.height='20px';document.body.appendChild(el);setTimeout(()=>el.remove(),850);}
-function addRipple(){const r=document.getElementById('btn-area').getBoundingClientRect();const cx=r.left+r.width/2,cy=r.top+r.height/2;const el=document.createElement('div');el.className='ripple';el.style.cssText=`left:${cx}px;top:${cy}px;transform:translate(-50%,-50%);position:fixed;z-index:28;`;document.body.appendChild(el);setTimeout(()=>el.remove(),1050);}
-function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.getElementById('toasts').appendChild(t);setTimeout(()=>t.remove(),4000);}
+// ══════════════════════════════════════════
+// COSMIC EVENT
+// ══════════════════════════════════════════
+function cosmicEvent(ev) {
+  const ov = document.getElementById('evt-overlay');
+  const en = document.getElementById('ev-name');
+  en.textContent=ev.name; en.style.color=ev.color;
+  en.style.textShadow=`0 0 60px ${ev.color},0 0 120px ${ev.color},0 0 200px ${ev.color}`;
+  document.getElementById('ev-desc').textContent=ev.desc;
+  ov.classList.remove('show'); void ov.offsetWidth; ov.classList.add('show');
+  setTimeout(()=>ov.classList.remove('show'),4700);
+  toast(`✦ ${ev.he} — ${ev.desc}`);
+  recordTL(ev);
+}
 
-// ── STREAK ──
-function tickStreak(){const today=new Date().toDateString();const last=localStorage.getItem('cv5-lastDate');if(last===today)return;const yest=new Date(Date.now()-86400000).toDateString();const s=last===yest?(parseInt(localStorage.getItem('cv5-streak')||0)+1):1;localStorage.setItem('cv5-streak',s);localStorage.setItem('cv5-lastDate',today);}
+// ══════════════════════════════════════════
+// BIG BANG
+// ══════════════════════════════════════════
+async function bigBang() {
+  transitioning = true;
+  state.doneUniverses++; state.generation++; state.uIndex++;
+  const pal = UNI_PALETTES[state.uIndex % UNI_PALETTES.length];
+  document.getElementById('bb-name').textContent = pal.name;
+  document.getElementById('bb-sup').textContent = `יקום ${GEN_HE[(state.generation-1)%GEN_HE.length]} נחשף — יקום חדש נולד`;
+  const bb = document.getElementById('bigbang'); bb.classList.add('active');
+  bgC.style.transition='filter 0.3s'; bgC.style.filter='brightness(8) saturate(0)';
+  await sleep(5200);
+  state.uClicks=0; circles=[]; revealedPixels=new Set(); lastMilestone=-1;
+  bgC.style.filter='';
+  drawCosmos(state.uIndex); rebuildMask();
+  bb.classList.remove('active'); updateUI(); transitioning=false; scheduleSave();
+}
+function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
 
-// ── UI ──
-function bump(id){const el=document.getElementById(id);el.classList.add('bump');setTimeout(()=>el.classList.remove('bump'),130);}
+// ══════════════════════════════════════════
+// VFX
+// ══════════════════════════════════════════
+function burst(cx,cy) {
+  const syms=['✦','·','★','◆','✧','∗'];
+  const cols=['#f0d080','#50eeff','#fff','#ff9050','#cc88ff','#44ffaa'];
+  for(let i=0;i<14;i++){
+    const el=document.createElement('div'); el.className='pt';
+    const a=(Math.PI*2/14)*i+(Math.random()-.5)*.6, d=40+Math.random()*90;
+    const c=cols[i%cols.length], sz=2+Math.random()*3;
+    el.style.cssText=`left:${cx}px;top:${cy}px;width:${sz}px;height:${sz}px;background:${c};box-shadow:0 0 8px ${c},0 0 16px ${c};--tx:${Math.cos(a)*d}px;--ty:${Math.sin(a)*d}px;--d:${.5+Math.random()*.6}s`;
+    document.body.appendChild(el); setTimeout(()=>el.remove(),1200);
+  }
+  for(let i=0;i<6;i++){
+    const el=document.createElement('div'); el.className='sburst';
+    const a=Math.random()*Math.PI*2, d=50+Math.random()*80;
+    el.textContent=syms[i%syms.length];
+    el.style.cssText=`left:${cx}px;top:${cy}px;--tx:${Math.cos(a)*d}px;--ty:${Math.sin(a)*d}px;--dur:${.7+Math.random()*.5}s`;
+    document.body.appendChild(el); setTimeout(()=>el.remove(),1300);
+  }
+}
+function shockwave(x,y){
+  const el=document.createElement('div'); el.className='shockwave';
+  el.style.left=x+'px'; el.style.top=y+'px'; el.style.width='20px'; el.style.height='20px';
+  document.body.appendChild(el); setTimeout(()=>el.remove(),850);
+}
+function addRipple(){
+  const r=document.getElementById('btn-area').getBoundingClientRect();
+  const cx=r.left+r.width/2, cy=r.top+r.height/2;
+  const el=document.createElement('div'); el.className='ripple';
+  el.style.cssText=`left:${cx}px;top:${cy}px;transform:translate(-50%,-50%);position:fixed;z-index:28;`;
+  document.body.appendChild(el); setTimeout(()=>el.remove(),1050);
+}
+function toast(msg){
+  const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
+  document.getElementById('toasts').appendChild(t); setTimeout(()=>t.remove(),4000);
+}
+
+// ══════════════════════════════════════════
+// STREAK
+// ══════════════════════════════════════════
+function tickStreak(){
+  const today=new Date().toDateString();
+  const last=localStorage.getItem('cv6-lastDate');
+  if(last===today)return;
+  const yest=new Date(Date.now()-86400000).toDateString();
+  const s=last===yest?(parseInt(localStorage.getItem('cv6-streak')||0)+1):1;
+  localStorage.setItem('cv6-streak',s);
+  localStorage.setItem('cv6-lastDate',today);
+}
+
+// ══════════════════════════════════════════
+// UI UPDATE
+// ══════════════════════════════════════════
+function bump(id){
+  const el=document.getElementById(id);
+  el.classList.add('bump'); setTimeout(()=>el.classList.remove('bump'),130);
+}
 function updateUI(){
   const pct=(state.uClicks/UNIVERSE_TARGET)*100;
   const pal=UNI_PALETTES[state.uIndex%UNI_PALETTES.length];
@@ -336,39 +682,80 @@ function updateUI(){
   document.getElementById('s-clicks').textContent=state.totalClicks.toLocaleString('he-IL');
   document.getElementById('s-pct').textContent=Math.floor(pct)+'%';
   document.getElementById('s-uni').textContent=state.doneUniverses;
-  document.getElementById('streak-n').textContent=parseInt(localStorage.getItem('cv5-streak')||0);
+  document.getElementById('streak-n').textContent=parseInt(localStorage.getItem('cv6-streak')||0);
   document.getElementById('live-count').textContent=(6+Math.floor(state.totalClicks/55)).toLocaleString('he-IL');
   document.getElementById('prog-fill').style.width=pct+'%';
   const next=MILESTONES.find(m=>m.at>state.uClicks);
   document.getElementById('prog-next').textContent=next?`עוד ${(next.at-state.uClicks).toLocaleString()} ← ${next.name}`:'✦ כמעט שם!';
-  const dw=document.getElementById('prog-dots');dw.innerHTML='';
-  MILESTONES.slice(0,-1).forEach(m=>{const d=document.createElement('div');d.className='m-dot'+(state.uClicks>=m.at?' done':'');d.style.left=(m.at/UNIVERSE_TARGET*100)+'%';dw.appendChild(d);});
+  const dw=document.getElementById('prog-dots'); dw.innerHTML='';
+  MILESTONES.slice(0,-1).forEach(m=>{
+    const d=document.createElement('div');
+    d.className='m-dot'+(state.uClicks>=m.at?' done':'');
+    d.style.left=(m.at/UNIVERSE_TARGET*100)+'%'; dw.appendChild(d);
+  });
   const fog=0.97-(pct/100)*0.82;
-  document.getElementById('vignette').style.background=`radial-gradient(ellipse 80% 80% at 50% 50%,transparent 0%,rgba(0,0,12,${fog*.5}) 52%,rgba(0,0,12,${fog}) 100%)`;
+  document.getElementById('vignette').style.background=
+    `radial-gradient(ellipse 85% 85% at 50% 50%,transparent 0%,rgba(0,0,12,${fog*0.45}) 55%,rgba(0,0,12,${fog}) 100%)`;
 }
 
-// ── ANTI-CHEAT ──
-function allowed(){const now=Date.now();if(now-lastClickTime<MIN_MS)return false;if(now-secStart>1000){clicksThisSec=0;secStart=now;}if(clicksThisSec>=MAX_CPS)return false;lastClickTime=now;clicksThisSec++;return true;}
+// ══════════════════════════════════════════
+// ANTI-CHEAT
+// ══════════════════════════════════════════
+function allowed(){
+  const now=Date.now();
+  if(now-lastClickTime<MIN_MS)return false;
+  if(now-secStart>1000){clicksThisSec=0;secStart=now;}
+  if(clicksThisSec>=MAX_CPS)return false;
+  lastClickTime=now; clicksThisSec++;
+  return true;
+}
 
-// ── CLICK ──
-const btnEl=document.getElementById('btn');
-btnEl.addEventListener('click',async e=>{
-  if(transitioning||!allowed())return;
-  state.totalClicks++;state.uClicks++;myClicks++;localStorage.setItem('cv5-myClicks',myClicks);
-  tickStreak();addCircle();
-  const r=btnEl.getBoundingClientRect();const cx=r.left+r.width/2,cy=r.top+r.height/2;
-  burst(cx,cy);shockwave(cx,cy);addRipple();
-  btnEl.classList.remove('clicked');void btnEl.offsetWidth;btnEl.classList.add('clicked');
-  bump('s-clicks');bump('s-pct');
-  for(const ev of MILESTONES){if(state.uClicks>=ev.at&&lastMilestone<ev.at&&ev.at<UNIVERSE_TARGET){lastMilestone=ev.at;cosmicEvent(ev);break;}}
-  if(state.uClicks>=UNIVERSE_TARGET){cosmicEvent(MILESTONES[MILESTONES.length-1]);await sleep(3500);await bigBang();return;}
-  updateUI();updateLB();scheduleSave();
+// ══════════════════════════════════════════
+// CLICK
+// ══════════════════════════════════════════
+const btnEl = document.getElementById('btn');
+btnEl.addEventListener('click', async e => {
+  if(transitioning || !allowed()) return;
+  state.totalClicks++; state.uClicks++; myClicks++;
+  localStorage.setItem('cv6-myClicks', myClicks);
+  tickStreak();
+  revealOnePixel();
+
+  const r=btnEl.getBoundingClientRect();
+  const cx=r.left+r.width/2, cy=r.top+r.height/2;
+  burst(cx,cy); shockwave(cx,cy); addRipple();
+  btnEl.classList.remove('clicked'); void btnEl.offsetWidth; btnEl.classList.add('clicked');
+  bump('s-clicks'); bump('s-pct');
+
+  for(const ev of MILESTONES){
+    if(state.uClicks>=ev.at && lastMilestone<ev.at && ev.at<UNIVERSE_TARGET){
+      lastMilestone=ev.at; cosmicEvent(ev); break;
+    }
+  }
+  if(state.uClicks>=UNIVERSE_TARGET){
+    cosmicEvent(MILESTONES[MILESTONES.length-1]);
+    await sleep(3500); await bigBang(); return;
+  }
+  updateUI(); updateLB(); scheduleSave();
 });
 
-// ── RESIZE ──
-let rsTimer;window.addEventListener('resize',()=>{clearTimeout(rsTimer);rsTimer=setTimeout(()=>{resizeBg();drawCosmos(state.uIndex);resizeMask();updateUI();},200);});
+// ══════════════════════════════════════════
+// RESIZE
+// ══════════════════════════════════════════
+let rsT;
+window.addEventListener('resize', () => {
+  clearTimeout(rsT);
+  rsT = setTimeout(() => {
+    bgC.width=window.innerWidth; bgC.height=window.innerHeight;
+    drawCosmos(state.uIndex);
+    resizeMask(); // recomputes grid and rebuilds from revealedPixels
+    updateUI();
+  }, 200);
+});
 
-// ── HIDE LOAD (always called, no matter what) ──
+// ══════════════════════════════════════════
+// LOAD SCREEN
+// ══════════════════════════════════════════
 function hideLoad(){
   const l=document.getElementById('load');
   if(!l)return;
@@ -376,59 +763,63 @@ function hideLoad(){
   setTimeout(()=>{if(l.parentNode)l.parentNode.removeChild(l);},1000);
 }
 
-// ── INIT ──
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
 async function init(){
-  // 1. Name
+  // Name
   try{
-    myName=localStorage.getItem('cv5-name');
-    if(!myName){myName='חוקר-'+Math.floor(1000+Math.random()*8999);localStorage.setItem('cv5-name',myName);}
-    myClicks=parseInt(localStorage.getItem('cv5-myClicks')||0);
-  }catch(e){myName='חוקר-'+(Math.random()*9000|1000);myClicks=0;}
+    myName=localStorage.getItem('cv6-name');
+    if(!myName){myName='חוקר-'+Math.floor(1000+Math.random()*8999);localStorage.setItem('cv6-name',myName);}
+    myClicks=parseInt(localStorage.getItem('cv6-myClicks')||0);
+  }catch(e){myName='חוקר-'+(1000+(Math.random()*8999|0));myClicks=0;}
 
-  // 2. Size canvases FIRST (critical — must happen before draw)
+  // Size canvases
   bgC.width=window.innerWidth; bgC.height=window.innerHeight;
   maskC.width=window.innerWidth; maskC.height=window.innerHeight;
+  gridCols=Math.ceil(maskC.width/PX); gridRows=Math.ceil(maskC.height/PX);
 
-  // 3. Draw cosmos immediately so something is visible
-  try{ drawCosmos(0); }catch(e){ console.warn('drawCosmos failed',e); }
+  // Draw cosmos first so something is visible immediately
+  try{ drawCosmos(0); }catch(e){ console.warn(e); }
 
-  // 4. Black fog
-  try{ rebuildMask(); }catch(e){}
+  // Full black fog
+  maskCtx.fillStyle='rgba(0,0,12,1)';
+  maskCtx.fillRect(0,0,maskC.width,maskC.height);
 
-  // 5. Basic UI
+  // Basic UI
   try{ updateUI(); }catch(e){}
 
-  // 6. Hide load screen — do this early so user isn't stuck
-  setTimeout(hideLoad, 800);
+  // Hide load after short delay (never blocks)
+  setTimeout(hideLoad, 750);
 
-  // 7. Load saved state (async, non-blocking)
+  // Load saved state
   try{
-    const saved=await dbGet('global');
+    const saved = await dbGet('global');
     if(saved){
-      Object.assign(state,saved);
-      if(saved.circles)circles=saved.circles.map(c=>({
-        x:c.xp*maskC.width, y:c.yp*maskC.height,
-        r:c.rp*Math.min(maskC.width,maskC.height), ...c
-      }));
-      if(saved.leaderboard)state.leaderboard=saved.leaderboard;
-      if(saved.messages)state.messages=saved.messages;
-      if(saved.timelineEvents)state.timelineEvents=saved.timelineEvents;
-      // Redraw with correct universe index
+      Object.assign(state, saved);
+      if(saved.circles && saved.circles.length>0){
+        restorePixelsFromCircles(saved.circles);
+      }
+      if(saved.leaderboard) state.leaderboard=saved.leaderboard;
+      if(saved.messages) state.messages=saved.messages;
+      if(saved.timelineEvents) state.timelineEvents=saved.timelineEvents;
+      // Redraw correct universe
       drawCosmos(state.uIndex);
-      rebuildMask();
       updateUI();
     }
   }catch(e){ console.warn('load state failed',e); }
 
-  lastMilestone=Math.max(-1,...MILESTONES.filter(m=>state.uClicks>=m.at&&m.at<UNIVERSE_TARGET).map(m=>m.at));
+  lastMilestone = Math.max(-1, ...MILESTONES
+    .filter(m=>state.uClicks>=m.at && m.at<UNIVERSE_TARGET)
+    .map(m=>m.at));
 
-  try{ updateLB();renderLB();renderTL();renderMsgs(); }catch(e){}
+  try{ updateLB(); renderLB(); renderTL(); renderMsgs(); }catch(e){}
   try{ startLive(); }catch(e){}
 }
 
-// Safety net: if init crashes entirely, still hide load after 3s
-setTimeout(hideLoad, 3000);
-init().catch(e=>{ console.error('init failed',e); hideLoad(); });
+// Safety net
+setTimeout(hideLoad, 4000);
+init().catch(e=>{ console.error(e); hideLoad(); });
 </script>
 </body>
 </html>
