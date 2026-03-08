@@ -655,25 +655,23 @@ function rebuildMask(){
 }
 
 function revealNextPixel(){
-  // Find next unrevealed cell in sorted order
   for(const cell of sortedCells){
     const k=`${cell.c},${cell.r}`;
     if(!revealedSet.has(k)){
       revealedSet.add(k);
-      // Incremental erase
       maskCtx.globalCompositeOperation='destination-out';
       maskCtx.fillStyle='rgba(0,0,0,1)';
       maskCtx.fillRect(cell.c*PX,cell.r*PX,PX,PX);
       maskCtx.globalCompositeOperation='source-over';
-      // Flash
       const el=document.createElement('div');el.className='pxf';
       el.style.cssText=`left:${cell.c*PX}px;top:${cell.r*PX}px;width:${PX}px;height:${PX}px;background:rgba(255,255,220,0.9);`;
       document.body.appendChild(el);setTimeout(()=>el.remove(),420);
-      // Save
-      circles.push({xp:(cell.c+.5)/gridCols,yp:(cell.r+.5)/gridRows});
-      return;
+      const px={xp:(cell.c+.5)/gridCols,yp:(cell.r+.5)/gridRows};
+      circles.push(px);
+      return px; // ← return for sync
     }
   }
+  return null;
 }
 
 function restorePixels(saved){
@@ -695,14 +693,195 @@ let lastClickTime=0,clicksThisSec=0,secStart=Date.now();
 let transitioning=false,lastMilestone=-1;
 
 // ══════════════════════════════════════
-// DB
+// DB — REAL-TIME LIVE SYNC
 // ══════════════════════════════════════
-async function dbGet(p){if(!FIREBASE_URL){try{return JSON.parse(localStorage.getItem('cv7-'+p)||'null')}catch{return null}}try{const r=await fetch(`${FIREBASE_URL}/${p}.json`);return await r.json()}catch{return null}}
-async function dbSet(p,d){if(!FIREBASE_URL){try{localStorage.setItem('cv7-'+p,JSON.stringify(d))}catch{}return}try{await fetch(`${FIREBASE_URL}/${p}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)})}catch{}}
-let saveTimer;
-function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(async()=>{await dbSet('global',{totalClicks:state.totalClicks,uClicks:state.uClicks,uIndex:state.uIndex,generation:state.generation,doneUniverses:state.doneUniverses,circles,leaderboard:state.leaderboard,messages:state.messages.slice(-20),timelineEvents:state.timelineEvents})},900)}
-function startLive(){if(!FIREBASE_URL)return;try{const es=new EventSource(`${FIREBASE_URL}/global.json`);es.addEventListener('put',e=>{try{const d=JSON.parse(e.data);if(d?.data)applyRemote(d.data)}catch{}})}catch{}}
-function applyRemote(g){if(!g)return;if(g.totalClicks>state.totalClicks){state.totalClicks=g.totalClicks;state.uClicks=g.uClicks||state.uClicks;}if(g.circles?.length>circles.length)restorePixels(g.circles);if(g.leaderboard){state.leaderboard=g.leaderboard;renderLB()}if(g.messages){state.messages=g.messages;renderMsgs()}if(g.timelineEvents){state.timelineEvents=g.timelineEvents;renderTL()}updateUI()}
+// Architecture:
+//   /global/counters   — totalClicks, uClicks, uIndex, generation, doneUniverses
+//   /global/pixels     — list of {xp,yp} per pixel revealed (append-only via POST)
+//   /global/leaderboard/{name} — {s: score}  (each user writes only their own)
+//   /global/messages   — list of messages (append via POST)
+//   /global/timeline   — list of milestone events
+//
+// Each user only writes their OWN data atomically.
+// The SSE listener picks up ALL changes from ALL users instantly.
+
+const LS = k => { try { return JSON.parse(localStorage.getItem('cv7-'+k)||'null') } catch { return null } };
+const LSset = (k,v) => { try { localStorage.setItem('cv7-'+k, JSON.stringify(v)) } catch {} };
+
+async function fbGet(path) {
+  if (!FIREBASE_URL) return LS(path);
+  try { const r = await fetch(`${FIREBASE_URL}/${path}.json`); return await r.json(); } catch { return null; }
+}
+async function fbSet(path, data) {
+  if (!FIREBASE_URL) { LSset(path, data); return; }
+  try { await fetch(`${FIREBASE_URL}/${path}.json`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}); } catch {}
+}
+async function fbPatch(path, data) {
+  if (!FIREBASE_URL) {
+    const cur = LS(path) || {};
+    LSset(path, {...cur, ...data});
+    return;
+  }
+  try { await fetch(`${FIREBASE_URL}/${path}.json`, {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}); } catch {}
+}
+async function fbPost(path, data) {
+  // POST = append a new child with auto-key (Firebase push)
+  if (!FIREBASE_URL) {
+    const cur = LS(path) || {};
+    cur['_'+Date.now()+'_'+Math.random().toString(36).slice(2,6)] = data;
+    LSset(path, cur);
+    return;
+  }
+  try { await fetch(`${FIREBASE_URL}/${path}.json`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}); } catch {}
+}
+
+// ── Per-click sync: immediately push only what changed ──
+// We batch pixel pushes every 300ms to avoid too many writes
+let pixelQueue = [];
+let pixelFlushTimer = null;
+
+function queuePixelSync(xp, yp) {
+  pixelQueue.push({xp, yp});
+  clearTimeout(pixelFlushTimer);
+  pixelFlushTimer = setTimeout(flushPixels, 300);
+}
+
+async function flushPixels() {
+  if (!pixelQueue.length) return;
+  const batch = pixelQueue.splice(0);
+  // Patch counters atomically (only our user's view of shared counters)
+  await fbPatch('global/counters', {
+    totalClicks: state.totalClicks,
+    uClicks: state.uClicks,
+    uIndex: state.uIndex,
+    generation: state.generation,
+    doneUniverses: state.doneUniverses,
+  });
+  // Append each pixel as a new child (atomic, no collision)
+  for (const px of batch) {
+    await fbPost('global/pixels', px);
+  }
+  // Update our leaderboard entry (only our own key — no collision with others)
+  const safeName = myName.replace(/[.#$/\[\]]/g,'_');
+  await fbSet(`global/leaderboard/${safeName}`, {n: myName, s: myClicks, ts: Date.now()});
+}
+
+// ── Save non-click data (timeline, messages) ──
+let miscTimer = null;
+function scheduleMiscSave() {
+  clearTimeout(miscTimer);
+  miscTimer = setTimeout(async () => {
+    await fbSet('global/timeline', state.timelineEvents);
+    await fbSet('global/messages', state.messages.slice(-20));
+  }, 1200);
+}
+
+// ── LIVE LISTENER — SSE on entire /global node ──
+// Fires for every write by any user
+function startLive() {
+  if (!FIREBASE_URL) return;
+  try {
+    const es = new EventSource(`${FIREBASE_URL}/global.json`);
+    es.addEventListener('put',   e => { try { handleSSE(JSON.parse(e.data)); } catch {} });
+    es.addEventListener('patch', e => { try { handleSSE(JSON.parse(e.data)); } catch {} });
+    es.onerror = () => setTimeout(startLive, 3000); // reconnect on error
+  } catch {}
+}
+
+function handleSSE(event) {
+  if (!event?.data) return;
+  const g = event.data;
+  applyRemote(g);
+}
+
+function applyRemote(g) {
+  if (!g) return;
+  let uiDirty = false;
+
+  // Counters — take the MAX (highest click count wins, never go backwards)
+  if (g.counters) {
+    if (g.counters.totalClicks > state.totalClicks) {
+      state.totalClicks = g.counters.totalClicks;
+      uiDirty = true;
+    }
+    if (g.counters.uClicks > state.uClicks) {
+      state.uClicks = g.counters.uClicks;
+      uiDirty = true;
+    }
+    // Sync universe index
+    if (g.counters.uIndex !== undefined && g.counters.uIndex !== state.uIndex) {
+      state.uIndex = g.counters.uIndex;
+      state.generation = g.counters.generation || state.generation;
+      state.doneUniverses = g.counters.doneUniverses || state.doneUniverses;
+      uiDirty = true;
+    }
+  }
+
+  // Pixels — accept any new ones we don't have yet
+  if (g.pixels) {
+    const pixelArr = Object.values(g.pixels);
+    if (pixelArr.length > circles.length) {
+      // Find and reveal only the new ones
+      const newPixels = pixelArr.slice(circles.length);
+      for (const px of newPixels) {
+        const col = Math.min(gridCols-1, Math.floor(px.xp * gridCols));
+        const row = Math.min(gridRows-1, Math.floor(px.yp * gridRows));
+        const k = `${col},${row}`;
+        if (!revealedSet.has(k)) {
+          revealedSet.add(k);
+          // Reveal silently (no flash for remote pixels — would be overwhelming)
+          maskCtx.globalCompositeOperation = 'destination-out';
+          maskCtx.fillStyle = 'rgba(0,0,0,1)';
+          maskCtx.fillRect(col*PX, row*PX, PX, PX);
+          maskCtx.globalCompositeOperation = 'source-over';
+        }
+      }
+      circles = pixelArr;
+      uiDirty = true;
+    }
+  }
+
+  // Leaderboard — merge all players
+  if (g.leaderboard) {
+    const lb = Object.values(g.leaderboard).filter(e => e?.n);
+    lb.sort((a,b) => b.s - a.s);
+    state.leaderboard = lb.slice(0, 8);
+    renderLB();
+  }
+
+  // Messages
+  if (g.messages) {
+    const msgs = Object.values(g.messages).sort((a,b) => (a.ts||0)-(b.ts||0));
+    if (msgs.length !== state.messages.length) {
+      state.messages = msgs;
+      renderMsgs();
+    }
+  }
+
+  // Timeline
+  if (g.timeline) {
+    const tl = Array.isArray(g.timeline) ? g.timeline : Object.values(g.timeline);
+    if (tl.length > state.timelineEvents.length) {
+      state.timelineEvents = tl;
+      renderTL();
+    }
+  }
+
+  if (uiDirty) updateUI();
+}
+
+// ── Leaderboard update (called after every click) ──
+function updateLB() {
+  const safeName = myName.replace(/[.#$/\[\]]/g,'_');
+  // Update locally
+  const lb = state.leaderboard;
+  const i = lb.findIndex(e => e.n === myName);
+  if (i >= 0) lb[i].s = myClicks; else lb.push({n:myName, s:myClicks});
+  lb.sort((a,b) => b.s - a.s);
+  state.leaderboard = lb.slice(0, 8);
+  renderLB();
+  // Remote write is handled in flushPixels() above
+}
 
 // ══════════════════════════════════════
 // TABS
@@ -724,7 +903,15 @@ function renderTL(){const w=document.getElementById('tl-wrap');w.innerHTML='';[.
 // ══════════════════════════════════════
 // MESSAGES
 // ══════════════════════════════════════
-function sendMsg(){const inp=document.getElementById('msg-input');const t=inp.value.trim();if(!t)return;inp.value='';state.messages.push({n:myName,t,ts:Date.now()});state.messages=state.messages.slice(-20);renderMsgs();scheduleSave()}
+function sendMsg(){
+  const inp=document.getElementById('msg-input');
+  const t=inp.value.trim();if(!t)return;inp.value='';
+  const msg={n:myName,t,ts:Date.now()};
+  state.messages.push(msg);
+  state.messages=state.messages.slice(-20);
+  renderMsgs();
+  fbPost('global/messages', msg); // atomic append, no collision
+}
 document.getElementById('msg-input').addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg()});
 function renderMsgs(){const f=document.getElementById('msg-feed');f.innerHTML='';[...state.messages].reverse().slice(0,5).forEach(m=>{const mins=Math.round((Date.now()-m.ts)/60000);const ts=mins<1?'עכשיו':mins<60?`לפני ${mins} דק`:'מוקדם';const el=document.createElement('div');el.className='msg-item';el.innerHTML=`<div class="msg-meta"><span class="msg-nm2">${m.n}</span><span class="msg-tm">${ts}</span></div><div class="msg-txt">${m.t.replace(/</g,'&lt;')}</div>`;f.appendChild(el)})}
 
@@ -772,7 +959,13 @@ async function bigBang(){
   state.uClicks=0;circles=[];revealedSet=new Set();lastMilestone=-1;
   bgC.style.filter='';
   drawCosmos(state.uIndex);buildSortedCells();rebuildMask();
-  bb.classList.remove('active');updateUI();transitioning=false;scheduleSave();
+  bb.classList.remove('active');updateUI();transitioning=false;
+  // Reset pixels in DB, save new counters
+  await fbSet('global/pixels', {});
+  await fbPatch('global/counters', {
+    totalClicks:state.totalClicks, uClicks:0,
+    uIndex:state.uIndex, generation:state.generation, doneUniverses:state.doneUniverses
+  });
 }
 function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
 
@@ -843,7 +1036,12 @@ btnEl.addEventListener('click',async e=>{
   if(transitioning||!allowed())return;
   state.totalClicks++;state.uClicks++;myClicks++;
   localStorage.setItem('cv7-myClicks',myClicks);
-  tickStreak();revealNextPixel();
+  tickStreak();
+
+  // Reveal pixel and get its position for sync
+  const px = revealNextPixel();
+  if (px) queuePixelSync(px.xp, px.yp);
+
   const r=btnEl.getBoundingClientRect();const cx=r.left+r.width/2,cy=r.top+r.height/2;
   burst(cx,cy);shockwave(cx,cy);addRipple();
   btnEl.classList.remove('clicked');void btnEl.offsetWidth;btnEl.classList.add('clicked');
@@ -851,11 +1049,13 @@ btnEl.addEventListener('click',async e=>{
 
   for(const ev of MILESTONES){
     if(state.uClicks>=ev.at&&lastMilestone<ev.at&&ev.at<UNIVERSE_TARGET){
-      lastMilestone=ev.at;showReward(ev);break;
+      lastMilestone=ev.at;showReward(ev);
+      scheduleMiscSave();
+      break;
     }
   }
   if(state.uClicks>=UNIVERSE_TARGET){showReward(MILESTONES[MILESTONES.length-1]);await sleep(4000);await bigBang();return}
-  updateUI();updateLB();scheduleSave();
+  updateUI();updateLB();
 });
 
 // ══════════════════════════════════════
@@ -884,14 +1084,37 @@ async function init(){
   setTimeout(hideLoad,700);
 
   try{
-    const saved=await dbGet('global');
+    const saved = await fbGet('global');
     if(saved){
-      Object.assign(state,saved);
-      if(saved.circles?.length>0)restorePixels(saved.circles);
-      if(saved.leaderboard)state.leaderboard=saved.leaderboard;
-      if(saved.messages)state.messages=saved.messages;
-      if(saved.timelineEvents)state.timelineEvents=saved.timelineEvents;
-      drawCosmos(state.uIndex);updateUI();
+      // Load counters
+      if(saved.counters){
+        Object.assign(state, {
+          totalClicks: saved.counters.totalClicks||0,
+          uClicks:     saved.counters.uClicks||0,
+          uIndex:      saved.counters.uIndex||0,
+          generation:  saved.counters.generation||0,
+          doneUniverses: saved.counters.doneUniverses||0,
+        });
+      }
+      // Load pixels
+      if(saved.pixels){
+        const pixelArr = Object.values(saved.pixels).filter(p=>p?.xp!=null);
+        if(pixelArr.length>0) restorePixels(pixelArr);
+      }
+      // Load leaderboard
+      if(saved.leaderboard){
+        state.leaderboard = Object.values(saved.leaderboard).filter(e=>e?.n).sort((a,b)=>b.s-a.s).slice(0,8);
+      }
+      // Load messages
+      if(saved.messages){
+        state.messages = Object.values(saved.messages).sort((a,b)=>(a.ts||0)-(b.ts||0));
+      }
+      // Load timeline
+      if(saved.timeline){
+        state.timelineEvents = Array.isArray(saved.timeline)?saved.timeline:Object.values(saved.timeline);
+      }
+      drawCosmos(state.uIndex);
+      updateUI();
     }
   }catch(e){console.warn(e)}
 
