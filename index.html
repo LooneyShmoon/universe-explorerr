@@ -796,22 +796,37 @@ function scheduleMiscSave() {
   }, 1200);
 }
 
-// ── LIVE LISTENER — SSE on entire /global node ──
-// Fires for every write by any user
+// ── LIVE LISTENER ──
+// 1. BroadcastChannel — instant sync between tabs/windows in same browser (no server needed)
+// 2. Firebase SSE — sync across different devices/browsers
+let bc = null;
+
 function startLive() {
+  // BroadcastChannel: works between tabs with no server
+  try {
+    bc = new BroadcastChannel('universe-v7');
+    bc.onmessage = e => {
+      if (e.data?.type === 'click') applyRemote(e.data.payload);
+    };
+  } catch {}
+
+  // Firebase SSE: works across devices
   if (!FIREBASE_URL) return;
   try {
     const es = new EventSource(`${FIREBASE_URL}/global.json`);
     es.addEventListener('put',   e => { try { handleSSE(JSON.parse(e.data)); } catch {} });
     es.addEventListener('patch', e => { try { handleSSE(JSON.parse(e.data)); } catch {} });
-    es.onerror = () => setTimeout(startLive, 3000); // reconnect on error
+    es.onerror = () => setTimeout(startLive, 3000);
   } catch {}
+}
+
+function broadcastClick(payload) {
+  try { bc?.postMessage({ type: 'click', payload }); } catch {}
 }
 
 function handleSSE(event) {
   if (!event?.data) return;
-  const g = event.data;
-  applyRemote(g);
+  applyRemote(event.data);
 }
 
 function applyRemote(g) {
@@ -1060,7 +1075,21 @@ btnEl.addEventListener('click',async e=>{
 
   // Reveal pixel and get its position for sync
   const px = revealNextPixel();
-  if (px) queuePixelSync(px.xp, px.yp);
+  if (px) {
+    queuePixelSync(px.xp, px.yp);
+    // Instantly broadcast to other tabs (BroadcastChannel — no server)
+    broadcastClick({
+      counters: {
+        totalClicks: state.totalClicks,
+        uClicks: state.uClicks,
+        uIndex: state.uIndex,
+        generation: state.generation,
+        doneUniverses: state.doneUniverses,
+      },
+      pixels: { ['_'+Date.now()]: px },
+      leaderboard: { [myName.replace(/[.#$/\[\]]/g,'_')]: {n:myName, s:myClicks} },
+    });
+  }
 
   const r=btnEl.getBoundingClientRect();const cx=r.left+r.width/2,cy=r.top+r.height/2;
   burst(cx,cy);shockwave(cx,cy);addRipple();
