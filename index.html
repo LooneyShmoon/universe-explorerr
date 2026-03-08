@@ -826,7 +826,26 @@ function broadcastClick(payload) {
 
 function handleSSE(event) {
   if (!event?.data) return;
-  applyRemote(event.data);
+  const { path, data } = event;
+
+  // PUT on root "/" — full state on connect
+  if (path === '/' || path === '') {
+    applyRemote(data);
+    return;
+  }
+
+  // PATCH/PUT on a sub-path — wrap into the right shape for applyRemote
+  // e.g. path="/pixels/-ABC" data={xp,yp}  →  applyRemote({pixels:{"-ABC":{xp,yp}}})
+  // e.g. path="/counters" data={totalClicks:5,...}
+  const parts = path.replace(/^\//,'').split('/');
+  let wrapped = {};
+  let cur = wrapped;
+  for (let i = 0; i < parts.length - 1; i++) {
+    cur[parts[i]] = {};
+    cur = cur[parts[i]];
+  }
+  cur[parts[parts.length - 1]] = data;
+  applyRemote(wrapped);
 }
 
 function applyRemote(g) {
@@ -854,26 +873,24 @@ function applyRemote(g) {
 
   // Pixels — accept any new ones we don't have yet
   if (g.pixels) {
-    const pixelArr = Object.values(g.pixels);
-    if (pixelArr.length > circles.length) {
-      // Find and reveal only the new ones
-      const newPixels = pixelArr.slice(circles.length);
-      for (const px of newPixels) {
-        const col = Math.min(gridCols-1, Math.floor(px.xp * gridCols));
-        const row = Math.min(gridRows-1, Math.floor(px.yp * gridRows));
-        const k = `${col},${row}`;
-        if (!revealedSet.has(k)) {
-          revealedSet.add(k);
-          // Reveal silently (no flash for remote pixels — would be overwhelming)
-          maskCtx.globalCompositeOperation = 'destination-out';
-          maskCtx.fillStyle = 'rgba(0,0,0,1)';
-          maskCtx.fillRect(col*PX, row*PX, PX, PX);
-          maskCtx.globalCompositeOperation = 'source-over';
-        }
+    const pixelMap = g.pixels;
+    let added = false;
+    for (const [key, px] of Object.entries(pixelMap)) {
+      if (!px?.xp == null) continue;
+      const col = Math.min(gridCols-1, Math.floor(px.xp * gridCols));
+      const row = Math.min(gridRows-1, Math.floor(px.yp * gridRows));
+      const k = `${col},${row}`;
+      if (!revealedSet.has(k)) {
+        revealedSet.add(k);
+        maskCtx.globalCompositeOperation = 'destination-out';
+        maskCtx.fillStyle = 'rgba(0,0,0,1)';
+        maskCtx.fillRect(col*PX, row*PX, PX, PX);
+        maskCtx.globalCompositeOperation = 'source-over';
+        circles.push(px);
+        added = true;
       }
-      circles = pixelArr;
-      uiDirty = true;
     }
+    if (added) uiDirty = true;
   }
 
   // Leaderboard — merge all players
