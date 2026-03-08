@@ -713,26 +713,48 @@ async function fbGet(path) {
   try { const r = await fetch(`${FIREBASE_URL}/${path}.json`); return await r.json(); } catch { return null; }
 }
 async function fbSet(path, data) {
-  if (!FIREBASE_URL) { LSset(path, data); return; }
+  if (!FIREBASE_URL) { LSset(path, data); lsSaveSnapshot(); return; }
   try { await fetch(`${FIREBASE_URL}/${path}.json`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}); } catch {}
 }
 async function fbPatch(path, data) {
   if (!FIREBASE_URL) {
     const cur = LS(path) || {};
     LSset(path, {...cur, ...data});
+    lsSaveSnapshot();
     return;
   }
   try { await fetch(`${FIREBASE_URL}/${path}.json`, {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}); } catch {}
 }
 async function fbPost(path, data) {
-  // POST = append a new child with auto-key (Firebase push)
   if (!FIREBASE_URL) {
     const cur = LS(path) || {};
     cur['_'+Date.now()+'_'+Math.random().toString(36).slice(2,6)] = data;
     LSset(path, cur);
+    lsSaveSnapshot();
     return;
   }
   try { await fetch(`${FIREBASE_URL}/${path}.json`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}); } catch {}
+}
+
+// ── localStorage snapshot — saves the full /global structure locally ──
+let lsSnapTimer = null;
+function lsSaveSnapshot() {
+  clearTimeout(lsSnapTimer);
+  lsSnapTimer = setTimeout(() => {
+    LSset('global', {
+      counters: {
+        totalClicks: state.totalClicks,
+        uClicks: state.uClicks,
+        uIndex: state.uIndex,
+        generation: state.generation,
+        doneUniverses: state.doneUniverses,
+      },
+      pixels: circles.reduce((acc,px,i) => { acc['_'+i]=px; return acc; }, {}),
+      leaderboard: state.leaderboard.reduce((acc,e) => { acc[e.n.replace(/[.#$/\[\]]/g,'_')]=e; return acc; }, {}),
+      messages: state.messages.reduce((acc,m,i) => { acc['_'+i]=m; return acc; }, {}),
+      timeline: state.timelineEvents,
+    });
+  }, 400);
 }
 
 // ── Per-click sync: immediately push only what changed ──
@@ -749,7 +771,6 @@ function queuePixelSync(xp, yp) {
 async function flushPixels() {
   if (!pixelQueue.length) return;
   const batch = pixelQueue.splice(0);
-  // Patch counters atomically (only our user's view of shared counters)
   await fbPatch('global/counters', {
     totalClicks: state.totalClicks,
     uClicks: state.uClicks,
@@ -757,13 +778,12 @@ async function flushPixels() {
     generation: state.generation,
     doneUniverses: state.doneUniverses,
   });
-  // Append each pixel as a new child (atomic, no collision)
   for (const px of batch) {
     await fbPost('global/pixels', px);
   }
-  // Update our leaderboard entry (only our own key — no collision with others)
   const safeName = myName.replace(/[.#$/\[\]]/g,'_');
   await fbSet(`global/leaderboard/${safeName}`, {n: myName, s: myClicks, ts: Date.now()});
+  lsSaveSnapshot(); // always keep local copy in sync
 }
 
 // ── Save non-click data (timeline, messages) ──
