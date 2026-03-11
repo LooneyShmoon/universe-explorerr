@@ -31,20 +31,51 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--void);color:#f
 @keyframes pxf{0%{opacity:.9;transform:scale(1.9)}100%{opacity:0;transform:scale(1)}}
 .pxf{position:fixed;pointer-events:none;z-index:22;animation:pxf .38s ease-out forwards}
 
-/* ── MILESTONE REWARD ── */
-#reward{position:fixed;inset:0;z-index:80;pointer-events:none;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;opacity:0}
-#reward.show{animation:rw-life 5.5s ease-in-out forwards}
-@keyframes rw-life{0%{opacity:0}8%{opacity:1}72%{opacity:1}100%{opacity:0}}
-#reward-canvas{border-radius:50%;animation:rw-scale 5.5s ease-in-out forwards}
-@keyframes rw-scale{0%{transform:scale(0);filter:blur(30px)}10%{transform:scale(1.06);filter:blur(0)}78%{transform:scale(1)}100%{transform:scale(1.15);filter:blur(8px)}}
-#rw-title{font-family:'Cinzel',serif;font-size:clamp(2.2rem,8vw,5rem);font-weight:900;
-  letter-spacing:.2em;text-transform:uppercase;
-  text-shadow:0 0 60px currentColor,0 0 120px currentColor,0 0 220px currentColor;margin-top:20px}
-#rw-sub{font-size:clamp(.9rem,2.5vw,1.4rem);letter-spacing:.25em;margin-top:6px;color:rgba(255,255,255,.65)}
-#rw-desc{font-size:clamp(.6rem,1.6vw,.82rem);letter-spacing:.35em;color:var(--mid);text-transform:uppercase;margin-top:8px}
-#rw-next{margin-top:18px;font-size:clamp(.58rem,1.4vw,.78rem);letter-spacing:.22em;
-  color:var(--cyan);text-transform:uppercase;text-shadow:0 0 14px var(--cyan)}
+/* ── MILESTONE REWARD — Educational Card ── */
+#reward{position:fixed;inset:0;z-index:80;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,10,.88);backdrop-filter:blur(8px);
+  opacity:0;pointer-events:none;transition:opacity .4s;padding:16px}
+#reward.show{opacity:1;pointer-events:all}
+#rw-inner{
+  position:relative;max-width:700px;width:100%;max-height:90vh;overflow-y:auto;
+  background:rgba(4,8,20,.97);border:1px solid rgba(240,208,128,.18);
+  display:grid;grid-template-columns:220px 1fr;gap:0;
+  box-shadow:0 0 80px rgba(0,0,0,.8);
+}
+@media(max-width:580px){#rw-inner{grid-template-columns:1fr;max-height:88vh}}
+#rw-close{position:absolute;top:12px;right:14px;z-index:2;
+  background:none;border:none;color:rgba(255,255,255,.3);font-size:1.1rem;
+  cursor:pointer;padding:4px 8px;transition:color .2s;line-height:1}
+#rw-close:hover{color:#fff}
+#rw-art-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:28px 16px;background:rgba(0,0,8,.5);gap:12px;min-height:220px}
+#reward-canvas{border-radius:50%;flex-shrink:0}
+#rw-nasa-img{width:100%;max-width:190px;border-radius:4px;border:1px solid rgba(255,255,255,.08);
+  display:none;object-fit:cover;aspect-ratio:1}
+#rw-nasa-img.loaded{display:block}
+#rw-nasa-caption{font-size:.48rem;letter-spacing:.12em;color:var(--dim);text-align:center;line-height:1.4;max-width:190px}
+#rw-content{padding:28px 24px 24px;display:flex;flex-direction:column;gap:12px}
+#rw-title{font-family:'Cinzel',serif;font-size:clamp(1.4rem,4vw,2.2rem);font-weight:900;
+  letter-spacing:.18em;text-transform:uppercase;
+  text-shadow:0 0 40px currentColor,0 0 80px currentColor;line-height:1}
+#rw-sub{font-size:clamp(.75rem,2vw,1rem);letter-spacing:.2em;color:rgba(255,255,255,.55);margin-top:-4px}
+#rw-headline{font-family:'Cinzel',serif;font-size:clamp(.75rem,1.8vw,.95rem);
+  color:var(--gold);letter-spacing:.12em;padding-bottom:8px;
+  border-bottom:1px solid rgba(240,208,128,.12)}
+#rw-facts{list-style:none;display:flex;flex-direction:column;gap:9px;flex:1}
+#rw-facts li{font-size:clamp(.65rem,1.5vw,.8rem);color:#ccc;line-height:1.6;padding-left:16px;position:relative}
+#rw-facts li::before{content:'✦';position:absolute;left:0;color:var(--gold);font-size:.6rem;top:2px}
+#rw-actions{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+#rw-learn{display:inline-block;font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--cyan);text-decoration:none;padding:8px 14px;
+  border:1px solid rgba(80,238,255,.22);transition:all .18s;width:fit-content}
+#rw-learn:hover{background:rgba(80,238,255,.1);border-color:var(--cyan)}
+#rw-next-lbl{font-size:.56rem;letter-spacing:.22em;color:var(--dim);text-transform:uppercase}
+/* entrance animation */
+#rw-inner{animation:none}
+#reward.show #rw-inner{animation:rw-enter .5s cubic-bezier(.2,0,.2,1) forwards}
+@keyframes rw-enter{from{transform:scale(.92) translateY(16px);opacity:0}to{transform:none;opacity:1}}
 
 /* ── BIG BANG ── */
 #bigbang{position:fixed;inset:0;z-index:200;background:#00000a;
@@ -352,7 +383,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--void);color:#f
 #mob-sheet{position:fixed;bottom:0;left:0;right:0;z-index:15;
   background:rgba(4,8,20,.97);border-top:1px solid rgba(240,208,128,.15);
   transform:translateY(100%);transition:transform .3s ease-out;
-  padding:16px 16px max(16px,env(safe-area-inset-bottom));max-height:55vh;overflow-y:auto}
+  padding:40px 16px max(16px,env(safe-area-inset-bottom));max-height:55vh;overflow-y:auto;position:relative}
 #mob-sheet.open{transform:translateY(0)}
 </style>
 </head>
@@ -382,13 +413,26 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--void);color:#f
 <div id="vignette"></div>
 <div id="scanlines"></div>
 
-<!-- MILESTONE REWARD -->
+<!-- MILESTONE REWARD — Educational Card -->
 <div id="reward">
-  <canvas id="reward-canvas" width="280" height="280"></canvas>
-  <div id="rw-title">NEBULA</div>
-  <div id="rw-sub">A nebula is born</div>
-  <div id="rw-desc">Vast cloud of gas and cosmic dust</div>
-  <div id="rw-next"></div>
+  <div id="rw-inner">
+    <button id="rw-close" onclick="closeReward()">✕</button>
+    <div id="rw-art-wrap">
+      <canvas id="reward-canvas" width="220" height="220"></canvas>
+      <img id="rw-nasa-img" alt="" />
+      <div id="rw-nasa-caption"></div>
+    </div>
+    <div id="rw-content">
+      <div id="rw-title">NEBULA</div>
+      <div id="rw-sub">A nebula is born</div>
+      <div id="rw-headline"></div>
+      <ul id="rw-facts"></ul>
+      <div id="rw-actions">
+        <a id="rw-learn" href="#" target="_blank" rel="noopener">🚀 Learn more on NASA →</a>
+        <div id="rw-next-lbl"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- BIG BANG -->
@@ -518,12 +562,78 @@ const MAX_CPS = 8, MIN_MS = 120;
 const PX = 10;
 
 const MILESTONES = [
-  {at:500,  name:'NEBULA',           sub:'A nebula is born',         color:'#9966ff', desc:'Vast cloud of gas and cosmic dust',          next:'1,000 more clicks → PULSAR',            drawReward:drawNebula},
-  {at:1500, name:'PULSAR',           sub:'A pulsar awakens',         color:'#44ddff', desc:'Neutron star pulsing with precision energy',  next:'1,500 more clicks → SUPERNOVA',         drawReward:drawPulsar},
-  {at:3000, name:'SUPERNOVA',        sub:'A star explodes!',         color:'#ff7030', desc:'A billion suns — one final blaze of glory',   next:'2,000 more clicks → QUASAR',            drawReward:drawSupernova},
-  {at:5000, name:'QUASAR',           sub:'A quasar ignites',         color:'#ffcc20', desc:'Blazing galactic core — the brightest object', next:'3,000 more clicks → BLACK HOLE',        drawReward:drawQuasar},
-  {at:8000, name:'BLACK HOLE',       sub:'Space-time bends',         color:'#c0c0ff', desc:'Nothing escapes — not even light',            next:'2,000 more clicks → new universe',      drawReward:drawBlackHole},
-  {at:10000,name:'UNIVERSE REVEALED',sub:'A new universe is born',   color:'#f0d080', desc:'Every pixel revealed — the cycle continues', next:'',                                      drawReward:drawBigBangArt},
+  {at:500,  name:'NEBULA',           sub:'A nebula is born',         color:'#9966ff', next:'1,000 more clicks → PULSAR',       drawReward:drawNebula,
+   edu:{
+     headline:'Stellar Nurseries',
+     facts:[
+       'Nebulae are clouds of gas and dust where stars are born — some span hundreds of light-years.',
+       'The Orion Nebula, visible to the naked eye, is 1,344 light-years away and birthing thousands of new stars.',
+       'The word "nebula" is Latin for "cloud" or "mist" — early astronomers used it for any fuzzy object in the sky.',
+     ],
+     nasaId:'PIA17563',
+     nasaCaption:'Orion Nebula — Hubble Space Telescope',
+     learnUrl:'https://science.nasa.gov/universe/nebulae/',
+   }},
+  {at:1500, name:'PULSAR',           sub:'A pulsar awakens',         color:'#44ddff', next:'1,500 more clicks → SUPERNOVA',    drawReward:drawPulsar,
+   edu:{
+     headline:'Cosmic Lighthouses',
+     facts:[
+       'Pulsars are rapidly spinning neutron stars that emit beams of electromagnetic radiation — like a cosmic lighthouse.',
+       'The fastest known pulsar spins 716 times per second. Earth rotates once per day.',
+       'A teaspoon of neutron star material would weigh about 10 million tons on Earth.',
+     ],
+     nasaId:'PIA20051',
+     nasaCaption:'Crab Nebula Pulsar — Chandra X-ray Observatory',
+     learnUrl:'https://science.nasa.gov/universe/stars/pulsars/',
+   }},
+  {at:3000, name:'SUPERNOVA',        sub:'A star explodes!',         color:'#ff7030', next:'2,000 more clicks → QUASAR',       drawReward:drawSupernova,
+   edu:{
+     headline:'The Death of a Giant',
+     facts:[
+       'A supernova releases more energy in seconds than our Sun will emit in its entire 10-billion-year lifetime.',
+       'All heavy elements in your body — iron in your blood, calcium in your bones — were forged in supernovae.',
+       'The last supernova visible to the naked eye was SN 1987A, spotted in the Large Magellanic Cloud.',
+     ],
+     nasaId:'PIA17557',
+     nasaCaption:'Cassiopeia A Supernova Remnant — Chandra + Hubble',
+     learnUrl:'https://science.nasa.gov/universe/stars/supernovae/',
+   }},
+  {at:5000, name:'QUASAR',           sub:'A quasar ignites',         color:'#ffcc20', next:'3,000 more clicks → BLACK HOLE',   drawReward:drawQuasar,
+   edu:{
+     headline:'The Brightest Objects in the Universe',
+     facts:[
+       'Quasars are the intensely luminous cores of distant galaxies, powered by supermassive black holes billions of times the mass of our Sun.',
+       'The most luminous quasar known (J0529-4351) shines 500 trillion times brighter than our Sun.',
+       'Quasars can outshine entire galaxies of hundreds of billions of stars — from a region no larger than our solar system.',
+     ],
+     nasaId:'PIA23122',
+     nasaCaption:'Quasar Host Galaxy — Hubble Space Telescope',
+     learnUrl:'https://science.nasa.gov/universe/black-holes/quasars/',
+   }},
+  {at:8000, name:'BLACK HOLE',       sub:'Space-time bends',         color:'#c0c0ff', next:'2,000 more clicks → new universe', drawReward:drawBlackHole,
+   edu:{
+     headline:'Where Space-Time Ends',
+     facts:[
+       'The supermassive black hole at the center of our galaxy, Sagittarius A*, is 4 million times the mass of the Sun — yet fits within the orbit of Mercury.',
+       'In 2019, the Event Horizon Telescope captured the first-ever image of a black hole: M87*, 6.5 billion solar masses, 55 million light-years away.',
+       'Time passes slower near a black hole. An astronaut near the event horizon would age far slower than someone watching from afar.',
+     ],
+     nasaId:'PIA23122',
+     nasaCaption:'First image of a black hole — Event Horizon Telescope, 2019',
+     learnUrl:'https://science.nasa.gov/universe/black-holes/',
+   }},
+  {at:10000,name:'UNIVERSE REVEALED',sub:'A new universe is born',   color:'#f0d080', next:'',                                drawReward:drawBigBangArt,
+   edu:{
+     headline:'The Observable Universe',
+     facts:[
+       'The observable universe is 93 billion light-years in diameter — and expanding faster than the speed of light at its edges.',
+       'There are an estimated 2 trillion galaxies in the observable universe, each containing hundreds of billions of stars.',
+       'The universe is 13.8 billion years old. If that were compressed into one year, all of human history would fit in the last 10 seconds.',
+     ],
+     nasaId:'PIA17991',
+     nasaCaption:'Hubble Ultra Deep Field — 10,000 galaxies in a single image',
+     learnUrl:'https://science.nasa.gov/universe/overview/',
+   }},
 ];
 
 const UNI_PALETTES = [
@@ -778,17 +888,26 @@ document.getElementById('name-input').addEventListener('keydown',e=>{if(e.key===
 // TABS & MOBILE
 // ══════════════════════════════════════
 function switchTab(id){document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['lb','tl','msg'][i]===id));document.querySelectorAll('.tab-pane').forEach(p=>p.classList.toggle('active',p.id==='tab-'+id))}
+function closeMobSheet(){
+  const sheet=document.getElementById('mob-sheet');
+  sheet.classList.remove('open');
+  sheet.dataset.tab='';
+  document.querySelectorAll('.mob-tab').forEach(b=>b.classList.remove('active'));
+}
 function mobTab(id){
   const sheet=document.getElementById('mob-sheet');
   document.querySelectorAll('.mob-tab').forEach((b,i)=>b.classList.toggle('active',['lb','tl','msg','upg'][i]===id));
-  if(sheet.dataset.tab===id&&sheet.classList.contains('open')){sheet.classList.remove('open');sheet.dataset.tab='';return}
+  if(sheet.dataset.tab===id&&sheet.classList.contains('open')){closeMobSheet();return}
   sheet.dataset.tab=id;
-  if(id==='lb'){sheet.innerHTML=`<div class="lb-hd">Active Explorers</div><div id="mob-lb"></div>`;renderLBMob()}
-  else if(id==='tl'){sheet.innerHTML=`<div class="tl-wrap" id="mob-tl"></div>`;renderTLMob()}
-  else if(id==='msg'){sheet.innerHTML=`<div class="msg-feed" id="mob-msg-feed"></div><div class="msg-iw"><input class="msg-inp" id="mob-msg-input" placeholder="Message..." maxlength="60"><button class="msg-snd" onclick="sendMobMsg()">→</button></div>`;renderMsgsMob();document.getElementById('mob-msg-input').addEventListener('keydown',e=>{if(e.key==='Enter')sendMobMsg()})}
-  else if(id==='upg'){sheet.innerHTML=`<div class="upg-hd">Upgrades</div><div id="mob-upg-cards"></div>`;renderUpgradesMob()}
+  const closeBtn=`<button onclick="closeMobSheet()" style="position:absolute;top:12px;left:14px;background:none;border:none;color:var(--dim);font-size:1.1rem;cursor:pointer;padding:4px 8px;z-index:1" title="Close">✕</button>`;
+  if(id==='lb'){sheet.innerHTML=`${closeBtn}<div class="lb-hd" style="padding-top:2px">Active Explorers</div><div id="mob-lb"></div>`;renderLBMob()}
+  else if(id==='tl'){sheet.innerHTML=`${closeBtn}<div class="tl-wrap" style="padding-top:2px" id="mob-tl"></div>`;renderTLMob()}
+  else if(id==='msg'){sheet.innerHTML=`${closeBtn}<div class="msg-feed" id="mob-msg-feed"></div><div class="msg-iw"><input class="msg-inp" id="mob-msg-input" placeholder="Message..." maxlength="60"><button class="msg-snd" onclick="sendMobMsg()">→</button></div>`;renderMsgsMob();document.getElementById('mob-msg-input').addEventListener('keydown',e=>{if(e.key==='Enter')sendMobMsg()})}
+  else if(id==='upg'){sheet.innerHTML=`${closeBtn}<div class="upg-hd" style="padding-top:2px">Upgrades</div><div id="mob-upg-cards"></div>`;renderUpgradesMob()}
   sheet.classList.add('open');
 }
+// Swipe down to close
+(()=>{let sy=0;const s=document.getElementById('mob-sheet');s.addEventListener('touchstart',e=>{sy=e.touches[0].clientY},{passive:true});s.addEventListener('touchend',e=>{if(e.changedTouches[0].clientY-sy>60)closeMobSheet()},{passive:true})})();
 function sendMobMsg(){const inp=document.getElementById('mob-msg-input');if(!inp)return;const t=inp.value.trim();if(!t)return;inp.value='';const msg={n:myName,t,ts:Date.now()};state.messages.push(msg);state.messages=state.messages.slice(-20);renderMsgs();renderMsgsMob();fbPost('global/messages',msg)}
 function renderLBMob(){const w=document.getElementById('mob-lb');if(!w)return;w.innerHTML=document.getElementById('lb-rows').innerHTML}
 function renderTLMob(){const w=document.getElementById('mob-tl');if(!w)return;w.innerHTML=document.getElementById('tl-wrap').innerHTML}
@@ -815,24 +934,74 @@ document.getElementById('msg-input').addEventListener('keydown',e=>{if(e.key==='
 function renderMsgs(){const f=document.getElementById('msg-feed');f.innerHTML='';[...state.messages].reverse().slice(0,5).forEach(m=>{const mins=Math.round((Date.now()-m.ts)/60000);const ts=mins<1?'just now':mins<60?`${mins}m ago`:'earlier';const el=document.createElement('div');el.className='msg-item';el.innerHTML=`<div class="msg-meta"><span class="msg-nm2">${m.av||''}${m.n}</span><span class="msg-tm">${ts}</span></div><div class="msg-txt">${m.t.replace(/</g,'&lt;')}</div>`;f.appendChild(el)})}
 
 // ══════════════════════════════════════
-// MILESTONE REWARD
+// MILESTONE REWARD — Educational
 // ══════════════════════════════════════
-function showReward(ev){
-  const overlay=document.getElementById('reward'),rc=document.getElementById('reward-canvas'),rCtx=rc.getContext('2d');
-  ev.drawReward(rCtx,rc.width,rc.height);
-  const sz=Math.min(window.innerWidth,window.innerHeight)*.36;rc.style.width=sz+'px';rc.style.height=sz+'px';
-  rc.style.boxShadow=`0 0 55px ${ev.color},0 0 110px ${ev.color}40,0 0 190px ${ev.color}18`;
-  document.getElementById('rw-title').textContent=ev.name;document.getElementById('rw-title').style.color=ev.color;
-  document.getElementById('rw-sub').textContent=ev.sub;
-  document.getElementById('rw-desc').textContent=ev.desc;
-  document.getElementById('rw-next').textContent=ev.next;
-  overlay.classList.remove('show');void overlay.offsetWidth;overlay.classList.add('show');
-  setTimeout(()=>overlay.classList.remove('show'),5700);
+const NASA_API = 'https://images-api.nasa.gov/asset/';
+
+async function fetchNasaImage(nasaId) {
+  try {
+    const res = await fetch(`${NASA_API}${nasaId}`);
+    const data = await res.json();
+    const items = data?.collection?.items;
+    if (!items?.length) return null;
+    // Find a jpg/png in the items
+    const img = items.find(i => /\.(jpg|jpeg|png)$/i.test(i.href));
+    return img?.href || null;
+  } catch { return null; }
+}
+
+function closeReward() {
+  document.getElementById('reward').classList.remove('show');
+}
+
+function showReward(ev) {
+  const overlay = document.getElementById('reward');
+  const rc = document.getElementById('reward-canvas');
+  const rCtx = rc.getContext('2d');
+
+  // Draw procedural art
+  ev.drawReward(rCtx, rc.width, rc.height);
+  rc.style.boxShadow = `0 0 40px ${ev.color},0 0 80px ${ev.color}40`;
+
+  // Fill text content
+  document.getElementById('rw-title').textContent = ev.name;
+  document.getElementById('rw-title').style.color = ev.color;
+  document.getElementById('rw-sub').textContent = ev.sub;
+
+  const edu = ev.edu;
+  document.getElementById('rw-headline').textContent = edu.headline;
+
+  const factsList = document.getElementById('rw-facts');
+  factsList.innerHTML = '';
+  edu.facts.forEach(f => {
+    const li = document.createElement('li');
+    li.textContent = f;
+    factsList.appendChild(li);
+  });
+
+  document.getElementById('rw-learn').href = edu.learnUrl;
+  document.getElementById('rw-next-lbl').textContent = ev.next ? `Next: ${ev.next}` : '✦ Universe complete!';
+
+  // NASA image — fetch async, show canvas first
+  const nasaImg = document.getElementById('rw-nasa-img');
+  const nasaCap = document.getElementById('rw-nasa-caption');
+  nasaImg.classList.remove('loaded');
+  nasaCap.textContent = '';
+  fetchNasaImage(edu.nasaId).then(url => {
+    if (url) {
+      nasaImg.onload = () => {
+        nasaImg.classList.add('loaded');
+        nasaCap.textContent = edu.nasaCaption;
+      };
+      nasaImg.src = url;
+    }
+  });
+
+  overlay.classList.add('show');
   toast(`✦ ${ev.name} — ${ev.sub}`);
   recordTL(ev);
-  // Broadcast to ALL windows/tabs (Firebase + BroadcastChannel)
   broadcastMilestone(ev);
-  bcastMilestone({name:ev.name,color:ev.color,sub:ev.sub});
+  bcastMilestone({ name: ev.name, color: ev.color, sub: ev.sub });
   scheduleMiscSave();
 }
 
